@@ -32,6 +32,10 @@ export function formatBestScore(gameId: GameId, score?: BestScore) {
     return '暂无记录'
   }
 
+  if (score.bestLevel <= 0 && score.bestScore <= 0) {
+    return '暂无闯关记录'
+  }
+
   if (gameId === 'number-memory') {
     return `${score.bestScore} 位`
   }

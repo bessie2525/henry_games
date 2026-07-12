@@ -1,25 +1,38 @@
 import { useEffect, useState } from 'react'
 import DifficultySelector from '@/components/DifficultySelector'
 import GameHeader from '@/components/GameHeader'
+import GameModeSelector from '@/components/GameModeSelector'
 import GridBoard from '@/components/GridBoard'
+import PracticeAccuracyBoard from '@/components/PracticeAccuracyBoard'
 import ResultModal from '@/components/ResultModal'
 import { getGameConfig } from '@/data/games'
 import { useBestScores } from '@/hooks/useBestScores'
-import type { GameResult, GameStatus } from '@/types/game'
+import type { GameMode, GameResult, GameStatus } from '@/types/game'
 import { generateVisualTargets, getVisualLevelConfig, type VisualLevelConfig } from './logic'
 
 const game = getGameConfig('visual-memory')
+const DEFAULT_PRACTICE_TOTAL = 10
+const MIN_PRACTICE_TOTAL = 5
+const MAX_PRACTICE_TOTAL = 50
 
 export default function VisualMemoryGame() {
-  const { bestScores, saveBestScore } = useBestScores()
+  const { bestScores, saveBestScore, savePracticeAccuracy } = useBestScores()
+  const [mode, setMode] = useState<GameMode>('challenge')
   const [startLevel, setStartLevel] = useState(game.defaultStartLevel)
   const [currentLevel, setCurrentLevel] = useState(startLevel)
   const [bestPassed, setBestPassed] = useState(0)
+  const [practiceTotal, setPracticeTotal] = useState(DEFAULT_PRACTICE_TOTAL)
+  const [practiceQuestion, setPracticeQuestion] = useState(1)
+  const [practiceCorrect, setPracticeCorrect] = useState(0)
   const [levelConfig, setLevelConfig] = useState<VisualLevelConfig>(() => getVisualLevelConfig(startLevel))
   const [targets, setTargets] = useState<number[]>([])
   const [selectedCells, setSelectedCells] = useState<number[]>([])
   const [status, setStatus] = useState<GameStatus>('intro')
   const [result, setResult] = useState<GameResult | null>(null)
+  const practiceScores =
+    bestScores[game.id]?.practiceBestAccuracyByQuestionCount?.[practiceTotal] ??
+    (practiceTotal === DEFAULT_PRACTICE_TOTAL ? bestScores[game.id]?.practiceBestAccuracyByLevel : undefined)
+  const currentPracticeBest = Math.round(practiceScores?.[startLevel] ?? 0)
 
   const startRound = (level: number, resetScore = false) => {
     const nextRound = generateVisualTargets(level)
@@ -32,6 +45,8 @@ export default function VisualMemoryGame() {
 
     if (resetScore) {
       setBestPassed(0)
+      setPracticeQuestion(1)
+      setPracticeCorrect(0)
     }
   }
 
@@ -39,7 +54,46 @@ export default function VisualMemoryGame() {
     startRound(startLevel, true)
   }
 
+  const finishPractice = (correctCount: number) => {
+    const accuracy = (correctCount / practiceTotal) * 100
+    const isNewBest = savePracticeAccuracy(game.id, startLevel, practiceTotal, accuracy)
+
+    setResult({
+      gameId: game.id,
+      title: '固定难度练习完成',
+      bestLevel: startLevel,
+      score: correctCount,
+      accuracy,
+      detail: `第 ${startLevel} 关，连续完成 ${practiceTotal} 题，答对 ${correctCount} 题。当前题数下该难度历史最高正确率：${Math.round(
+        Math.max(currentPracticeBest, accuracy),
+      )}%。`,
+      bestLevelLabel: '练习难度',
+      scoreLabel: '答对题数',
+      isNewBest,
+    })
+    setStatus('result')
+  }
+
+  const completePracticeQuestion = (isCorrect: boolean) => {
+    const nextCorrect = practiceCorrect + (isCorrect ? 1 : 0)
+
+    if (practiceQuestion >= practiceTotal) {
+      finishPractice(nextCorrect)
+      return
+    }
+
+    setPracticeCorrect(nextCorrect)
+    setPracticeQuestion((value) => value + 1)
+    setStatus(isCorrect ? 'success' : 'failed')
+    window.setTimeout(() => startRound(startLevel), 700)
+  }
+
   const finishGame = (detail: string) => {
+    if (mode === 'practice') {
+      completePracticeQuestion(false)
+      return
+    }
+
     const candidate = {
       gameId: game.id,
       bestLevel: bestPassed,
@@ -60,6 +114,11 @@ export default function VisualMemoryGame() {
   }
 
   const passRound = () => {
+    if (mode === 'practice') {
+      completePracticeQuestion(true)
+      return
+    }
+
     const nextBest = Math.max(bestPassed, currentLevel)
     setBestPassed(nextBest)
 
@@ -115,24 +174,55 @@ export default function VisualMemoryGame() {
   }, [levelConfig.previewDuration, status])
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:py-8">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
-          currentLabel={status === 'intro' ? '尚未开始' : `第 ${currentLevel} 关`}
+          currentLabel={
+            status === 'intro'
+              ? '尚未开始'
+              : mode === 'practice'
+                ? `第 ${currentLevel} 关 · ${practiceQuestion}/${practiceTotal}`
+                : `第 ${currentLevel} 关`
+          }
           bestScore={bestScores[game.id]}
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-            <div className="panel">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
+            <div className="panel p-5 sm:p-6 md:p-8">
               <p className="eyebrow">Rules</p>
-              <h2 className="section-title">记住亮起的目标格子</h2>
+              <h2 className="section-title text-3xl sm:text-4xl">记住亮起的目标格子</h2>
               <p className="mt-4 leading-7 text-slate-500">
                 目标格子会短暂高亮，隐藏后请找回所有目标。只要点击非目标格子，本轮就会结束。
               </p>
+              <div className="mt-6">
+                <GameModeSelector mode={mode} onChange={setMode} />
+              </div>
+              {mode === 'practice' ? (
+                <>
+                  <div className="mt-4 sm:mt-6">
+                    <DifficultySelector
+                      label="练习题数"
+                      value={practiceTotal}
+                      min={MIN_PRACTICE_TOTAL}
+                      max={MAX_PRACTICE_TOTAL}
+                      suffix="题"
+                      description="本次固定难度练习的总题数。"
+                      onChange={setPracticeTotal}
+                    />
+                  </div>
+                  <PracticeAccuracyBoard
+                    min={game.minStartLevel}
+                    max={game.maxStartLevel}
+                    suffix="关"
+                    questionCount={practiceTotal}
+                    scores={practiceScores}
+                  />
+                </>
+              ) : null}
               <button className="btn-primary mt-6" type="button" onClick={startGame}>
-                开始观察
+                {mode === 'practice' ? `开始 ${practiceTotal} 题练习` : '开始观察'}
               </button>
             </div>
             <DifficultySelector
@@ -141,19 +231,26 @@ export default function VisualMemoryGame() {
               min={game.minStartLevel}
               max={game.maxStartLevel}
               suffix="关"
-              description={`本关约 ${getVisualLevelConfig(startLevel).rows}x${getVisualLevelConfig(startLevel).cols} 网格。`}
+              description={
+                mode === 'practice'
+                  ? `固定第 ${startLevel} 关，做 ${practiceTotal} 题。当前题数最高正确率：${currentPracticeBest}%。`
+                  : `本关约 ${getVisualLevelConfig(startLevel).rows}x${getVisualLevelConfig(startLevel).cols} 网格。`
+              }
               onChange={setStartLevel}
             />
           </section>
         ) : (
-          <section className="panel mt-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <p className="font-bold text-slate-600">
+          <section className="panel mt-4 p-3 sm:mt-6 sm:p-5 md:p-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
+              <p className="text-sm font-bold text-slate-600 sm:text-base">
                 {status === 'showing'
                   ? `观察 ${targets.length} 个目标格子`
                   : `已找回：${selectedCells.length}/${targets.length}`}
               </p>
-              {status === 'success' ? <p className="status-pill success">全部找回，进入下一关</p> : null}
+              {status === 'success' ? (
+                <p className="status-pill success">{mode === 'practice' ? '本题正确，进入下一题' : '全部找回，进入下一关'}</p>
+              ) : null}
+              {status === 'failed' ? <p className="status-pill">本题错误，进入下一题</p> : null}
             </div>
             <GridBoard
               cells={levelConfig.rows * levelConfig.cols}
@@ -161,6 +258,8 @@ export default function VisualMemoryGame() {
               activeCells={status === 'showing' ? targets : []}
               selectedCells={selectedCells}
               disabled={status !== 'input'}
+              className="max-w-[min(92vw,58vh,560px)] gap-1.5 sm:gap-2.5"
+              cellClassName="min-h-0 rounded-xl text-base sm:rounded-2xl sm:text-lg"
               onCellClick={handleCellClick}
             />
           </section>

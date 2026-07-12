@@ -18,5 +18,5 @@ export function pickUniqueNumbers(count: number, maxExclusive: number) {
 }
 
 export function getDisplayDuration(length: number) {
-  return Math.max(1200, length * 450)
+  return Math.max(2000, length * 1000)
 }

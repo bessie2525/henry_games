@@ -1,21 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import DifficultySelector from '@/components/DifficultySelector'
 import GameHeader from '@/components/GameHeader'
+import GameModeSelector from '@/components/GameModeSelector'
+import PracticeAccuracyBoard from '@/components/PracticeAccuracyBoard'
 import ResultModal from '@/components/ResultModal'
 import { getGameConfig } from '@/data/games'
 import { useBestScores } from '@/hooks/useBestScores'
-import type { GameResult, GameStatus } from '@/types/game'
+import type { GameMode, GameResult, GameStatus } from '@/types/game'
 import { generateShapeRound, getShapeLabel, getShapeLevelConfig } from './logic'
 import ShapeTile from './ShapeTile'
 import type { ShapeItem, ShapeLevelConfig } from './types'
 
 const game = getGameConfig('shape-memory')
+const DEFAULT_PRACTICE_TOTAL = 10
+const MIN_PRACTICE_TOTAL = 5
+const MAX_PRACTICE_TOTAL = 50
 
 export default function ShapeMemoryGame() {
-  const { bestScores, saveBestScore } = useBestScores()
+  const { bestScores, saveBestScore, savePracticeAccuracy } = useBestScores()
+  const [mode, setMode] = useState<GameMode>('challenge')
   const [startLevel, setStartLevel] = useState(game.defaultStartLevel)
   const [currentLevel, setCurrentLevel] = useState(startLevel)
   const [bestPassed, setBestPassed] = useState(0)
+  const [practiceTotal, setPracticeTotal] = useState(DEFAULT_PRACTICE_TOTAL)
+  const [practiceQuestion, setPracticeQuestion] = useState(1)
+  const [practiceCorrect, setPracticeCorrect] = useState(0)
   const [targets, setTargets] = useState<ShapeItem[]>([])
   const [candidates, setCandidates] = useState<ShapeItem[]>([])
   const [levelConfig, setLevelConfig] = useState<ShapeLevelConfig>(() => getShapeLevelConfig(startLevel))
@@ -24,6 +33,10 @@ export default function ShapeMemoryGame() {
   const [result, setResult] = useState<GameResult | null>(null)
 
   const targetIds = useMemo(() => new Set(targets.map((target) => target.id)), [targets])
+  const practiceScores =
+    bestScores[game.id]?.practiceBestAccuracyByQuestionCount?.[practiceTotal] ??
+    (practiceTotal === DEFAULT_PRACTICE_TOTAL ? bestScores[game.id]?.practiceBestAccuracyByLevel : undefined)
+  const currentPracticeBest = Math.round(practiceScores?.[startLevel] ?? 0)
 
   const startRound = (level: number, resetScore = false) => {
     const round = generateShapeRound(level)
@@ -37,11 +50,47 @@ export default function ShapeMemoryGame() {
 
     if (resetScore) {
       setBestPassed(0)
+      setPracticeQuestion(1)
+      setPracticeCorrect(0)
     }
   }
 
   const startGame = () => {
     startRound(startLevel, true)
+  }
+
+  const finishPractice = (correctCount: number) => {
+    const accuracy = (correctCount / practiceTotal) * 100
+    const isNewBest = savePracticeAccuracy(game.id, startLevel, practiceTotal, accuracy)
+
+    setResult({
+      gameId: game.id,
+      title: '固定难度练习完成',
+      bestLevel: startLevel,
+      score: correctCount,
+      accuracy,
+      detail: `第 ${startLevel} 关，连续完成 ${practiceTotal} 题，答对 ${correctCount} 题。当前题数下该难度历史最高正确率：${Math.round(
+        Math.max(currentPracticeBest, accuracy),
+      )}%。`,
+      bestLevelLabel: '练习难度',
+      scoreLabel: '答对题数',
+      isNewBest,
+    })
+    setStatus('result')
+  }
+
+  const completePracticeQuestion = (isCorrect: boolean) => {
+    const nextCorrect = practiceCorrect + (isCorrect ? 1 : 0)
+
+    if (practiceQuestion >= practiceTotal) {
+      finishPractice(nextCorrect)
+      return
+    }
+
+    setPracticeCorrect(nextCorrect)
+    setPracticeQuestion((value) => value + 1)
+    setStatus(isCorrect ? 'success' : 'failed')
+    window.setTimeout(() => startRound(startLevel), 750)
   }
 
   const saveResult = (level: number, score: number) => {
@@ -54,6 +103,11 @@ export default function ShapeMemoryGame() {
   }
 
   const failRound = (detail: string, wrongItem?: ShapeItem) => {
+    if (mode === 'practice') {
+      completePracticeQuestion(false)
+      return
+    }
+
     const score = bestPassed > 0 ? getShapeLevelConfig(bestPassed).targetCount : 0
     const isNewBest = bestPassed > 0 ? saveResult(bestPassed, score) : false
     const correctShapes = targets.map(getShapeLabel).join('、')
@@ -72,6 +126,11 @@ export default function ShapeMemoryGame() {
   }
 
   const passRound = () => {
+    if (mode === 'practice') {
+      completePracticeQuestion(true)
+      return
+    }
+
     const nextBest = Math.max(bestPassed, currentLevel)
     setBestPassed(nextBest)
 
@@ -125,7 +184,13 @@ export default function ShapeMemoryGame() {
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
-          currentLabel={status === 'intro' ? '尚未开始' : `第 ${currentLevel} 关`}
+          currentLabel={
+            status === 'intro'
+              ? '尚未开始'
+              : mode === 'practice'
+                ? `第 ${currentLevel} 关 · ${practiceQuestion}/${practiceTotal}`
+                : `第 ${currentLevel} 关`
+          }
           bestScore={bestScores[game.id]}
         />
 
@@ -137,8 +202,33 @@ export default function ShapeMemoryGame() {
               <p className="mt-4 leading-7 text-slate-500">
                 系统会短暂展示一组颜色、形状和纹理组合。隐藏后，请从候选项中选出所有出现过的图形，点到干扰项会立即失败。
               </p>
+              <div className="mt-6">
+                <GameModeSelector mode={mode} onChange={setMode} />
+              </div>
+              {mode === 'practice' ? (
+                <>
+                  <div className="mt-6">
+                    <DifficultySelector
+                      label="练习题数"
+                      value={practiceTotal}
+                      min={MIN_PRACTICE_TOTAL}
+                      max={MAX_PRACTICE_TOTAL}
+                      suffix="题"
+                      description="本次固定难度练习的总题数。"
+                      onChange={setPracticeTotal}
+                    />
+                  </div>
+                  <PracticeAccuracyBoard
+                    min={game.minStartLevel}
+                    max={game.maxStartLevel}
+                    suffix="关"
+                    questionCount={practiceTotal}
+                    scores={practiceScores}
+                  />
+                </>
+              ) : null}
               <button className="btn-primary mt-6" type="button" onClick={startGame}>
-                开始记忆
+                {mode === 'practice' ? `开始 ${practiceTotal} 题练习` : '开始记忆'}
               </button>
             </div>
             <DifficultySelector
@@ -147,7 +237,11 @@ export default function ShapeMemoryGame() {
               min={game.minStartLevel}
               max={game.maxStartLevel}
               suffix="关"
-              description={`本关 ${getShapeLevelConfig(startLevel).targetCount} 个目标，${getShapeLevelConfig(startLevel).candidateCount} 个候选。`}
+              description={
+                mode === 'practice'
+                  ? `固定第 ${startLevel} 关，做 ${practiceTotal} 题。当前题数最高正确率：${currentPracticeBest}%。`
+                  : `本关 ${getShapeLevelConfig(startLevel).targetCount} 个目标，${getShapeLevelConfig(startLevel).candidateCount} 个候选。`
+              }
               onChange={setStartLevel}
             />
           </section>
@@ -159,7 +253,10 @@ export default function ShapeMemoryGame() {
                   ? `观察 ${targets.length} 个目标图形`
                   : `已选中：${selectedIds.length}/${targets.length}`}
               </p>
-              {status === 'success' ? <p className="status-pill success">全部正确，进入下一关</p> : null}
+              {status === 'success' ? (
+                <p className="status-pill success">{mode === 'practice' ? '本题正确，进入下一题' : '全部正确，进入下一关'}</p>
+              ) : null}
+              {status === 'failed' ? <p className="status-pill">本题错误，进入下一题</p> : null}
             </div>
 
             {status === 'showing' ? (

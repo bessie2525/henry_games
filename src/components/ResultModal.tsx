@@ -23,11 +23,11 @@ export default function ResultModal({ result, onReplay, onAdjust }: ResultModalP
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold text-slate-400">最高关卡</p>
+            <p className="text-xs font-semibold text-slate-400">{result.bestLevelLabel ?? '最高关卡'}</p>
             <p className="mt-1 text-2xl font-black text-slate-950">{result.bestLevel}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold text-slate-400">得分</p>
+            <p className="text-xs font-semibold text-slate-400">{result.scoreLabel ?? '得分'}</p>
             <p className="mt-1 text-2xl font-black text-slate-950">{result.score}</p>
           </div>
           <div className="rounded-2xl bg-cyan-50 p-4">

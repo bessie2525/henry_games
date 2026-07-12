@@ -15,6 +15,8 @@ export type GameStatus =
   | 'failed'
   | 'result'
 
+export type GameMode = 'challenge' | 'practice'
+
 export type GameConfig = {
   id: GameId
   name: string
@@ -34,6 +36,8 @@ export type BestScore = {
   bestLevel: number
   bestScore: number
   bestAccuracy?: number
+  practiceBestAccuracyByLevel?: Record<number, number>
+  practiceBestAccuracyByQuestionCount?: Record<number, Record<number, number>>
   updatedAt: number
 }
 
@@ -48,5 +52,7 @@ export type GameResult = {
   detail?: string
   answer?: string
   userAnswer?: string
+  bestLevelLabel?: string
+  scoreLabel?: string
   isNewBest: boolean
 }

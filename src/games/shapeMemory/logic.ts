@@ -7,22 +7,22 @@ export const shapePatterns: ShapePattern[] = ['solid', 'outline', 'striped', 'do
 
 export function getShapeLevelConfig(level: number): ShapeLevelConfig {
   if (level <= 3) {
-    return { targetCount: 2, candidateCount: 4, shapePoolSize: 3, colorPoolSize: 3, usePattern: false, previewDuration: 1800 }
+    return { targetCount: 2, candidateCount: 4, shapePoolSize: 3, colorPoolSize: 3, usePattern: false, previewDuration: 2000 }
   }
 
   if (level <= 6) {
-    return { targetCount: 3, candidateCount: 6, shapePoolSize: 4, colorPoolSize: 4, usePattern: false, previewDuration: 1700 }
+    return { targetCount: 3, candidateCount: 6, shapePoolSize: 4, colorPoolSize: 4, usePattern: false, previewDuration: 2000 }
   }
 
   if (level <= 10) {
-    return { targetCount: 4, candidateCount: 8, shapePoolSize: 5, colorPoolSize: 5, usePattern: false, previewDuration: 1600 }
+    return { targetCount: 4, candidateCount: 8, shapePoolSize: 5, colorPoolSize: 5, usePattern: false, previewDuration: 2000 }
   }
 
   if (level <= 15) {
-    return { targetCount: 5, candidateCount: 10, shapePoolSize: 6, colorPoolSize: 6, usePattern: true, previewDuration: 1500 }
+    return { targetCount: 5, candidateCount: 10, shapePoolSize: 6, colorPoolSize: 6, usePattern: true, previewDuration: 2000 }
   }
 
-  return { targetCount: 6, candidateCount: 12, shapePoolSize: 6, colorPoolSize: 6, usePattern: true, previewDuration: 1400 }
+  return { targetCount: 6, candidateCount: 12, shapePoolSize: 6, colorPoolSize: 6, usePattern: true, previewDuration: 2000 }
 }
 
 function makeShapeId(shape: ShapeType, color: ShapeColor, pattern: ShapePattern) {
