@@ -22,3 +22,31 @@ To use a custom path:
 ```bash
 LEADERBOARD_DB_PATH=/custom/path/leaderboard.sqlite ./scripts/init-leaderboard-db.sh
 ```
+
+## Import Browser Local Scores
+
+Open the website in the browser that has the local records, then run this in DevTools Console:
+
+```js
+copy(localStorage.getItem('cognitive-games-best-scores') || '{}')
+```
+
+Save the copied JSON on the server, for example:
+
+```bash
+nano /tmp/local-scores.json
+```
+
+Import it into the default leaderboard database:
+
+```bash
+cd /var/www/henry_games
+node scripts/import-local-scores-to-sqlite.mjs /tmp/local-scores.json
+```
+
+Verify imported records:
+
+```bash
+sqlite3 /var/www/henry_games_api/data/leaderboard.sqlite "SELECT * FROM challenge_leaderboard;"
+sqlite3 /var/www/henry_games_api/data/leaderboard.sqlite "SELECT * FROM fixed_leaderboard;"
+```
