@@ -34,7 +34,7 @@ export default function Home() {
               把记忆力和反应力练成手感。
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              四个小游戏覆盖数字记忆、序列复现、空间定位和视觉搜索。每个游戏都能选择起始难度，适合快速热身，也适合直接挑战高阶关卡。
+              小游戏覆盖数字记忆、序列复现、空间定位和视觉搜索。每个游戏都能选择起始难度，适合快速热身，也适合直接挑战高阶关卡。
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a className="btn-primary" href="#games">
