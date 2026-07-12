@@ -49,19 +49,40 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="scores" className="grid gap-3 md:grid-cols-4">
-          {games.map((game) => (
-            <div key={game.id} className="rounded-[26px] border border-slate-200/80 bg-white/80 p-5 shadow-sm shadow-slate-200/60">
-              <p className="text-sm font-bold text-slate-500">{game.name}</p>
-              <p className="mt-2 text-2xl font-black text-slate-950">{formatBestScore(game.id, bestScores[game.id])}</p>
+        <section
+          id="scores"
+          className="rounded-[30px] border border-cyan-100/90 bg-cyan-50/80 p-4 shadow-sm shadow-cyan-100/70 backdrop-blur sm:p-5"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow">Best Records</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">排行榜</h2>
             </div>
-          ))}
+            <p className="text-xs font-semibold text-slate-400">云端同步最高记录</p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {games.map((game) => (
+              <div key={game.id} className="rounded-2xl border border-white/80 bg-white/85 px-3 py-2.5 shadow-sm shadow-cyan-100/40">
+                <p className="truncate text-xs font-bold text-slate-500">{game.name}</p>
+                <p className="mt-1 truncate text-base font-black text-slate-950">{formatBestScore(game.id, bestScores[game.id])}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
-        <section id="games" className="mt-8 grid gap-5 md:grid-cols-2">
-          {games.map((game) => (
-            <GameCard key={game.id} game={game} bestScore={bestScores[game.id]} />
-          ))}
+        <section id="games" className="mt-10 rounded-[34px] bg-slate-100/70 p-3 sm:p-5">
+          <div className="mb-4 flex items-end justify-between gap-3 px-1">
+            <div>
+              <p className="eyebrow">Training Games</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">选择训练项目</h2>
+            </div>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            {games.map((game) => (
+              <GameCard key={game.id} game={game} bestScore={bestScores[game.id]} />
+            ))}
+          </div>
         </section>
       </div>
     </main>
