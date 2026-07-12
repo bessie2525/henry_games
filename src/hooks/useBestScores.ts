@@ -1,12 +1,38 @@
 import { useCallback, useEffect, useState } from 'react'
+import { fetchLeaderboardScores, submitChallengeScore, submitFixedAccuracy } from '@/api/leaderboard'
 import type { BestScore, BestScoreMap, GameId } from '@/types/game'
 import { isBetterScore, readBestScores, writeBestScores } from '@/utils/storage'
 
 export function useBestScores() {
   const [bestScores, setBestScores] = useState<BestScoreMap>({})
 
+  const refreshBestScores = useCallback(async () => {
+    const cloudScores = await fetchLeaderboardScores()
+    writeBestScores(cloudScores)
+    setBestScores(cloudScores)
+  }, [])
+
   useEffect(() => {
-    setBestScores(readBestScores())
+    let isMounted = true
+
+    fetchLeaderboardScores()
+      .then((cloudScores) => {
+        if (!isMounted) {
+          return
+        }
+
+        writeBestScores(cloudScores)
+        setBestScores(cloudScores)
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBestScores(readBestScores())
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const saveBestScore = useCallback((candidate: BestScore) => {
@@ -25,8 +51,14 @@ export function useBestScores() {
       setBestScores(currentScores)
     }
 
+    submitChallengeScore(candidate)
+      .then(refreshBestScores)
+      .catch(() => {
+        setBestScores(readBestScores())
+      })
+
     return isNewBest
-  }, [])
+  }, [refreshBestScores])
 
   const savePracticeAccuracy = useCallback((gameId: GameId, level: number, questionCount: number, accuracy: number) => {
     const currentScores = readBestScores()
@@ -62,8 +94,14 @@ export function useBestScores() {
       setBestScores(currentScores)
     }
 
+    submitFixedAccuracy(gameId, level, questionCount, accuracy)
+      .then(refreshBestScores)
+      .catch(() => {
+        setBestScores(readBestScores())
+      })
+
     return isNewBest
-  }, [])
+  }, [refreshBestScores])
 
   return {
     bestScores,

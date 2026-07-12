@@ -20,10 +20,6 @@ export function isBetterScore(current: BestScore | undefined, candidate: BestSco
     return true
   }
 
-  if (candidate.bestScore !== current.bestScore) {
-    return candidate.bestScore > current.bestScore
-  }
-
   return candidate.bestLevel > current.bestLevel
 }
 
@@ -49,7 +45,7 @@ export function formatBestScore(gameId: GameId, score?: BestScore) {
   }
 
   if (gameId === 'n-back') {
-    return `${score.bestScore} 分`
+    return `第 ${score.bestLevel} 关`
   }
 
   return `第 ${score.bestLevel} 关`

@@ -7,6 +7,11 @@ export default defineConfig({
   build: {
     sourcemap: 'hidden',
   },
+  server: {
+    proxy: {
+      '/api': 'http://127.0.0.1:3001',
+    },
+  },
   plugins: [
     react({
       babel: {

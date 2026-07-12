@@ -77,7 +77,7 @@ export const games: GameConfig[] = [
     minStartLevel: 1,
     maxStartLevel: 10,
     startLabel: '起始关卡',
-    bestScoreLabel: '最佳得分',
+    bestScoreLabel: '最高关卡',
   },
 ]
 
