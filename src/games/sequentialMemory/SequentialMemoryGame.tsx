@@ -191,7 +191,7 @@ export default function SequentialMemoryGame() {
   }, [sequence, status])
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:py-8">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
@@ -206,7 +206,7 @@ export default function SequentialMemoryGame() {
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
             <div className="panel">
               <p className="eyebrow">Rules</p>
               <h2 className="section-title">看亮灯顺序，再复现</h2>
@@ -257,8 +257,8 @@ export default function SequentialMemoryGame() {
             />
           </section>
         ) : (
-          <section className="panel mt-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <section className="panel mt-4 sm:mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
               <p className="font-bold text-slate-600">
                 {status === 'showing' ? '正在播放序列，请观察。' : `输入进度：${inputIndex}/${sequence.length}`}
               </p>
@@ -272,6 +272,8 @@ export default function SequentialMemoryGame() {
               columns={3}
               activeCells={activeCell === null ? [] : [activeCell]}
               disabled={status !== 'input'}
+              className="max-w-[min(88vw,52vh,430px)] gap-2 sm:gap-3"
+              cellClassName="min-h-0 rounded-xl text-base sm:rounded-2xl sm:text-lg"
               onCellClick={handleCellClick}
             />
           </section>

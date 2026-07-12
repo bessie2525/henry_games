@@ -151,7 +151,7 @@ export default function ChimpTestGame() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:py-8">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
@@ -166,7 +166,7 @@ export default function ChimpTestGame() {
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
             <div className="panel">
               <p className="eyebrow">Rules</p>
               <h2 className="section-title">记住位置，按顺序点击</h2>
@@ -217,8 +217,8 @@ export default function ChimpTestGame() {
             />
           </section>
         ) : (
-          <section className="mt-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <section className="mt-4 sm:mt-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 sm:gap-3">
               <p className="text-sm font-bold text-slate-500">
                 下一步：点击 <span className="text-cyan-700">{nextExpected}</span>
               </p>
@@ -227,13 +227,13 @@ export default function ChimpTestGame() {
               ) : null}
               {status === 'failed' ? <p className="status-pill">本题错误，进入下一题</p> : null}
             </div>
-            <div className="relative h-[58vh] min-h-[420px] overflow-hidden rounded-[36px] border border-slate-200 bg-slate-950 shadow-2xl shadow-slate-200">
+            <div className="relative h-[min(62vh,520px)] min-h-[340px] overflow-hidden rounded-[26px] border border-slate-200 bg-slate-950 shadow-2xl shadow-slate-200 sm:min-h-[420px] sm:rounded-[36px]">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(34,211,238,0.24),transparent_30%)]" />
-              <div className="absolute inset-4 rounded-[28px] border border-white/10 bg-[linear-gradient(to_right,rgba(255,255,255,0.09)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.09)_1px,transparent_1px)] bg-[length:20%_25%]" />
+              <div className="absolute inset-3 rounded-[20px] border border-white/10 bg-[linear-gradient(to_right,rgba(255,255,255,0.09)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.09)_1px,transparent_1px)] bg-[length:20%_25%] sm:inset-4 sm:rounded-[28px]" />
               {items.map((item) => (
                 <button
                   key={item.value}
-                  className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-2xl border border-cyan-200/60 bg-white text-xl font-black text-slate-950 shadow-xl shadow-cyan-950/20 transition hover:scale-105 disabled:opacity-25 sm:h-16 sm:w-16 sm:text-2xl"
+                  className="absolute grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-xl border border-cyan-200/60 bg-white text-lg font-black text-slate-950 shadow-xl shadow-cyan-950/20 transition hover:scale-105 disabled:opacity-25 sm:h-14 sm:w-14 sm:rounded-2xl sm:text-xl md:h-16 md:w-16 md:text-2xl"
                   style={{ left: `${item.x}%`, top: `${item.y}%` }}
                   type="button"
                   disabled={clickedValues.includes(item.value)}

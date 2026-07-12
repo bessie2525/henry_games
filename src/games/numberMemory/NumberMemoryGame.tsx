@@ -197,7 +197,7 @@ export default function NumberMemoryGame() {
   }, [])
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:py-8">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
@@ -212,7 +212,7 @@ export default function NumberMemoryGame() {
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
             <div className="panel">
               <p className="eyebrow">Rules</p>
               <h2 className="section-title">看清数字，完整复现</h2>
@@ -263,15 +263,15 @@ export default function NumberMemoryGame() {
             />
           </section>
         ) : (
-          <section className="panel mt-6 text-center">
+          <section className="panel mt-4 text-center sm:mt-6">
             <p className="eyebrow">{status === 'showing' ? 'Remember' : 'Type it back'}</p>
             {status === 'showing' ? (
               <>
-                <div className="mx-auto mt-8 max-w-3xl overflow-x-auto rounded-[32px] bg-slate-950 px-6 py-10 text-center text-4xl font-black tracking-[0.18em] text-cyan-200 shadow-2xl shadow-slate-200 sm:text-6xl">
+                <div className="mx-auto mt-5 max-w-3xl overflow-x-auto whitespace-nowrap rounded-[24px] bg-slate-950 px-4 py-8 text-center text-3xl font-black tracking-[0.12em] text-cyan-200 shadow-2xl shadow-slate-200 sm:mt-8 sm:rounded-[32px] sm:px-6 sm:py-10 sm:text-6xl sm:tracking-[0.18em]">
                   {targetNumber}
                 </div>
-                <div className="mx-auto mt-6 max-w-3xl">
-                  <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                <div className="mx-auto mt-5 max-w-3xl sm:mt-6">
+                  <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.12em] text-slate-400 sm:tracking-[0.18em]">
                     <span>倒计时</span>
                     <span>{remainingSeconds} 秒</span>
                   </div>
@@ -282,13 +282,13 @@ export default function NumberMemoryGame() {
                     />
                   </div>
                 </div>
-                <p className="mt-5 text-sm font-bold text-slate-500">数字即将隐藏，请集中注意力。</p>
+                <p className="mt-4 text-sm font-bold text-slate-500 sm:mt-5">数字即将隐藏，请集中注意力。</p>
               </>
             ) : (
-              <form className="mx-auto mt-8 max-w-xl" onSubmit={handleSubmit}>
+              <form className="mx-auto mt-5 max-w-xl sm:mt-8" onSubmit={handleSubmit}>
                 <input
                   ref={inputRef}
-                  className="w-full rounded-[28px] border border-slate-200 bg-white px-6 py-5 text-center text-3xl font-black tracking-[0.16em] text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                  className="w-full rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-center text-2xl font-black tracking-[0.1em] text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 sm:rounded-[28px] sm:px-6 sm:py-5 sm:text-3xl sm:tracking-[0.16em]"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={userInput}

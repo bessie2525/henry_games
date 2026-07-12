@@ -225,7 +225,7 @@ export default function NBackGame() {
   }, [config.nLevel, currentTrial])
 
   return (
-    <main className="min-h-screen px-4 py-4 md:py-5">
+    <main className="min-h-screen px-3 py-3 sm:px-4 md:py-5">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
@@ -234,31 +234,31 @@ export default function NBackGame() {
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
             <div className="panel">
               <p className="eyebrow">Rules</p>
               <h2 className="section-title">判断当前刺激是否回到前 N 轮</h2>
               <p className="mt-4 leading-7 text-slate-500">
                 观察 3×3 网格中连续出现的高亮格子。从第 N+1 轮开始，判断当前格子是否与前 N 轮的位置相同。
               </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="mt-5 grid gap-2 sm:grid-cols-3 sm:gap-3">
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                   <Eye className="text-cyan-600" size={20} />
                   <p className="mt-2 text-sm font-black text-slate-800">先观察</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">前 N 轮只建立记忆缓冲，不计分。</p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                   <CheckCircle2 className="text-emerald-600" size={20} />
                   <p className="mt-2 text-sm font-black text-slate-800">匹配</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">当前格子等于前 N 轮格子时，点击匹配。</p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
                   <XCircle className="text-rose-600" size={20} />
                   <p className="mt-2 text-sm font-black text-slate-800">不匹配</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">当前格子和前 N 轮不同，必须点击不匹配。</p>
                 </div>
               </div>
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-cyan-50 p-4 text-sm font-bold text-cyan-900">
+              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-cyan-50 p-3 text-sm font-bold text-cyan-900 sm:p-4">
                 <Keyboard className="mt-0.5 shrink-0" size={18} />
                 <span>每关固定 10 个有效判断，正确率达到 80% 会弹出晋级提示。Space 点击匹配；N / 右方向键点击不匹配。</span>
               </div>
@@ -277,8 +277,8 @@ export default function NBackGame() {
             />
           </section>
         ) : (
-          <section className="mt-4 rounded-[28px] border border-slate-200/80 bg-white/85 p-4 shadow-sm shadow-slate-200/70 backdrop-blur md:p-5">
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <section className="mt-3 rounded-[24px] border border-slate-200/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70 backdrop-blur sm:mt-4 sm:rounded-[28px] sm:p-4 md:p-5">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-2 sm:gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-cyan-200">
@@ -291,12 +291,12 @@ export default function NBackGame() {
                     {isScoredRound ? '本轮计分' : '观察中'}
                   </span>
                 </div>
-                <p className="mt-2 text-base font-black text-slate-900">{roundNote}</p>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-2 text-sm font-black text-slate-900 sm:text-base">{roundNote}</p>
+                <p className="mt-1 text-xs text-slate-400 sm:text-sm">
                   当前轮：{progressText}，有效判断从第 {config.nLevel + 1} 轮开始。
                 </p>
               </div>
-              <button className="btn-secondary" type="button" onClick={() => finishGame()}>
+              <button className="btn-secondary min-h-10 px-4 py-2" type="button" onClick={() => finishGame()}>
                 <TimerOff size={18} />
                 提前结束
               </button>
@@ -306,20 +306,20 @@ export default function NBackGame() {
               <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${progressPercent}%` }} />
             </div>
 
-            <div className="mb-3 grid gap-2 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 p-3">
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-slate-50 p-2 sm:p-3">
                 <p className="text-xs font-semibold text-slate-400">比较目标</p>
-                <p className="mt-1 text-base font-black text-slate-900">
+                <p className="mt-1 text-xs font-black text-slate-900 sm:text-base">
                   {isScoredRound ? `第 ${currentIndex + 1} 轮 vs 第 ${currentIndex + 1 - config.nLevel} 轮` : '先观察'}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="rounded-2xl bg-slate-50 p-2 sm:p-3">
                 <p className="text-xs font-semibold text-slate-400">作答状态</p>
-                <p className="mt-1 text-base font-black text-slate-900">{responseState}</p>
+                <p className="mt-1 text-xs font-black text-slate-900 sm:text-base">{responseState}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="rounded-2xl bg-slate-50 p-2 sm:p-3">
                 <p className="text-xs font-semibold text-slate-400">节奏</p>
-                <p className="mt-1 text-base font-black text-slate-900">
+                <p className="mt-1 text-xs font-black text-slate-900 sm:text-base">
                   {config.stimulusDuration / 1000}s / {config.intervalDuration / 1000}s
                 </p>
               </div>
@@ -331,13 +331,13 @@ export default function NBackGame() {
               activeCells={activeCell === null ? [] : [activeCell]}
               disabled
               labels={activeCell === null ? {} : { [activeCell]: '●' }}
-              className="max-w-[min(60vh,465px)] gap-2"
-              cellClassName="rounded-xl text-base"
+              className="max-w-[min(84vw,42vh,390px)] gap-2 sm:max-w-[min(60vh,465px)]"
+              cellClassName="min-h-0 rounded-xl text-sm sm:text-base"
             />
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
               <button
-                className="btn-primary min-h-11"
+                className="btn-primary min-h-11 px-4"
                 type="button"
                 disabled={!canRespond}
                 onClick={() => answerCurrentTrial('match')}
@@ -346,7 +346,7 @@ export default function NBackGame() {
                 匹配
               </button>
               <button
-                className="btn-secondary min-h-11 justify-center"
+                className="btn-secondary min-h-11 justify-center px-4"
                 type="button"
                 disabled={!canRespond}
                 onClick={() => answerCurrentTrial('non-match')}

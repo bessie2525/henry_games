@@ -180,7 +180,7 @@ export default function ShapeMemoryGame() {
   }, [levelConfig.previewDuration, status])
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:py-8">
       <div className="mx-auto max-w-5xl">
         <GameHeader
           game={game}
@@ -195,7 +195,7 @@ export default function ShapeMemoryGame() {
         />
 
         {status === 'intro' ? (
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1fr_0.9fr]">
             <div className="panel">
               <p className="eyebrow">Rules</p>
               <h2 className="section-title">记住图形，再找出它们</h2>
@@ -246,8 +246,8 @@ export default function ShapeMemoryGame() {
             />
           </section>
         ) : (
-          <section className="panel mt-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <section className="panel mt-4 sm:mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
               <p className="font-bold text-slate-600">
                 {status === 'showing'
                   ? `观察 ${targets.length} 个目标图形`
@@ -260,17 +260,18 @@ export default function ShapeMemoryGame() {
             </div>
 
             {status === 'showing' ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
                 {targets.map((item) => (
-                  <ShapeTile key={item.id} item={item} disabled />
+                  <ShapeTile key={item.id} item={item} compact disabled />
                 ))}
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
                 {candidates.map((item) => (
                   <ShapeTile
                     key={item.id}
                     item={item}
+                    compact
                     selected={selectedIds.includes(item.id)}
                     disabled={status !== 'input' || selectedIds.includes(item.id)}
                     onClick={() => handleCandidateClick(item)}

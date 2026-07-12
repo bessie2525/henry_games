@@ -65,10 +65,10 @@ export default function ShapeTile({ item, selected = false, disabled = false, co
   return (
     <button
       className={cn(
-        'group grid min-h-28 place-items-center rounded-[28px] border bg-white p-4 shadow-sm shadow-slate-200 transition',
+        'group grid min-h-24 place-items-center rounded-2xl border bg-white p-3 shadow-sm shadow-slate-200 transition sm:min-h-28 sm:rounded-[28px] sm:p-4',
         selected ? 'border-emerald-300 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200',
         disabled ? 'cursor-default' : 'hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-100',
-        compact ? 'min-h-24' : '',
+        compact ? 'min-h-20 sm:min-h-24' : '',
       )}
       type="button"
       disabled={disabled}
@@ -76,7 +76,7 @@ export default function ShapeTile({ item, selected = false, disabled = false, co
       aria-label={getShapeLabel(item)}
     >
       <span
-        className={cn('block h-16 w-16 transition group-hover:scale-105', compact ? 'h-14 w-14' : '')}
+        className={cn('block h-12 w-12 transition group-hover:scale-105 sm:h-16 sm:w-16', compact ? 'h-10 w-10 sm:h-14 sm:w-14' : '')}
         style={shapeStyle}
       />
       <span className="sr-only">{getShapeLabel(item)}</span>
