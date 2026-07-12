@@ -1,0 +1,644 @@
+src/components/GameHeader.tsx
+  s_5226016730cf25::t_83c7891a64d409 14,17,23-27,31,33,35,40 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389bdd0eb1e94f07fcc93","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":14},{"Single":17},{"Range":[23,27]},{"Single":31},{"Single":33},{"Single":35},{"Single":40}]}]}
+src/games/nBack/NBackGame.tsx
+  s_5226016730cf25::t_c1100c388c4687 228,237,244-245,250,255,261,280-281,294-295,299,309-310,312,316,318,320,322,334-335,338,340,349 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389f5d0eb1e94f07fcd46","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":228},{"Single":237},{"Range":[244,245]},{"Single":250},{"Single":255},{"Single":261},{"Range":[280,281]},{"Range":[294,295]},{"Single":299},{"Range":[309,310]},{"Single":312},{"Single":316},{"Single":318},{"Single":320},{"Single":322},{"Range":[334,335]},{"Single":338},{"Single":340},{"Single":349}]}]}
+src/games/shapeMemory/ShapeTile.tsx
+  s_5226016730cf25::t_a6344b73c191c8 68,71,79 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389e9d0eb1e94f07fcd09","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":68},{"Single":71},{"Single":79}]}]}
+src/games/sequentialMemory/SequentialMemoryGame.tsx
+  s_5226016730cf25::t_0fde36cedff583 194,209,260-261,275-276 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389ded0eb1e94f07fccea","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":194},{"Single":209},{"Range":[260,261]},{"Range":[275,276]}]}]}
+src/index.css
+  s_5226016730cf25::t_cf603f86c7f6cd 53,61,65 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389b7d0eb1e94f07fcc7d","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":53},{"Single":61},{"Single":65}]}]}
+src/games/chimpTest/ChimpTestGame.tsx
+  s_5226016730cf25::t_f60d67af8f51a3 154,169,220-221,230,232,236 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389c6d0eb1e94f07fccac","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":154},{"Single":169},{"Range":[220,221]},{"Single":230},{"Single":232},{"Single":236}]}]}
+src/games/shapeMemory/ShapeMemoryGame.tsx
+  s_5226016730cf25::t_a5265b6da62094 183,198,249-250,263,265,269,274 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389efd0eb1e94f07fcd27","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":183},{"Single":198},{"Range":[249,250]},{"Single":263},{"Single":265},{"Single":269},{"Single":274}]}]}
+src/games/numberMemory/NumberMemoryGame.tsx
+  s_5226016730cf25::t_85ac4ece3780ac 200,215,266,270,273-274,285,288,291 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5389d5d0eb1e94f07fcccb","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":200},{"Single":215},{"Single":266},{"Single":270},{"Range":[273,274]},{"Single":285},{"Single":288},{"Single":291}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "540a01373f702f64008e5c92427b592066afff79",
+  "prompts": {},
+  "sessions": {
+    "s_5226016730cf25": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a5332253f67b59dbadc6683",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "attestation_metadata": {
+    "src/components/GameHeader.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_83c7891a64d409",
+        "line_ranges": [
+          {
+            "Single": 14
+          },
+          {
+            "Single": 17
+          },
+          {
+            "Range": [
+              23,
+              27
+            ]
+          },
+          {
+            "Single": 31
+          },
+          {
+            "Single": 33
+          },
+          {
+            "Single": 35
+          },
+          {
+            "Single": 40
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389bdd0eb1e94f07fcc93",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 14
+              },
+              {
+                "Single": 17
+              },
+              {
+                "Range": [
+                  23,
+                  27
+                ]
+              },
+              {
+                "Single": 31
+              },
+              {
+                "Single": 33
+              },
+              {
+                "Single": 35
+              },
+              {
+                "Single": 40
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/chimpTest/ChimpTestGame.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_f60d67af8f51a3",
+        "line_ranges": [
+          {
+            "Single": 154
+          },
+          {
+            "Single": 169
+          },
+          {
+            "Range": [
+              220,
+              221
+            ]
+          },
+          {
+            "Single": 230
+          },
+          {
+            "Single": 232
+          },
+          {
+            "Single": 236
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389c6d0eb1e94f07fccac",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 154
+              },
+              {
+                "Single": 169
+              },
+              {
+                "Range": [
+                  220,
+                  221
+                ]
+              },
+              {
+                "Single": 230
+              },
+              {
+                "Single": 232
+              },
+              {
+                "Single": 236
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/nBack/NBackGame.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_c1100c388c4687",
+        "line_ranges": [
+          {
+            "Single": 228
+          },
+          {
+            "Single": 237
+          },
+          {
+            "Range": [
+              244,
+              245
+            ]
+          },
+          {
+            "Single": 250
+          },
+          {
+            "Single": 255
+          },
+          {
+            "Single": 261
+          },
+          {
+            "Range": [
+              280,
+              281
+            ]
+          },
+          {
+            "Range": [
+              294,
+              295
+            ]
+          },
+          {
+            "Single": 299
+          },
+          {
+            "Range": [
+              309,
+              310
+            ]
+          },
+          {
+            "Single": 312
+          },
+          {
+            "Single": 316
+          },
+          {
+            "Single": 318
+          },
+          {
+            "Single": 320
+          },
+          {
+            "Single": 322
+          },
+          {
+            "Range": [
+              334,
+              335
+            ]
+          },
+          {
+            "Single": 338
+          },
+          {
+            "Single": 340
+          },
+          {
+            "Single": 349
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389f5d0eb1e94f07fcd46",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 228
+              },
+              {
+                "Single": 237
+              },
+              {
+                "Range": [
+                  244,
+                  245
+                ]
+              },
+              {
+                "Single": 250
+              },
+              {
+                "Single": 255
+              },
+              {
+                "Single": 261
+              },
+              {
+                "Range": [
+                  280,
+                  281
+                ]
+              },
+              {
+                "Range": [
+                  294,
+                  295
+                ]
+              },
+              {
+                "Single": 299
+              },
+              {
+                "Range": [
+                  309,
+                  310
+                ]
+              },
+              {
+                "Single": 312
+              },
+              {
+                "Single": 316
+              },
+              {
+                "Single": 318
+              },
+              {
+                "Single": 320
+              },
+              {
+                "Single": 322
+              },
+              {
+                "Range": [
+                  334,
+                  335
+                ]
+              },
+              {
+                "Single": 338
+              },
+              {
+                "Single": 340
+              },
+              {
+                "Single": 349
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/numberMemory/NumberMemoryGame.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_85ac4ece3780ac",
+        "line_ranges": [
+          {
+            "Single": 200
+          },
+          {
+            "Single": 215
+          },
+          {
+            "Single": 266
+          },
+          {
+            "Single": 270
+          },
+          {
+            "Range": [
+              273,
+              274
+            ]
+          },
+          {
+            "Single": 285
+          },
+          {
+            "Single": 288
+          },
+          {
+            "Single": 291
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389d5d0eb1e94f07fcccb",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 200
+              },
+              {
+                "Single": 215
+              },
+              {
+                "Single": 266
+              },
+              {
+                "Single": 270
+              },
+              {
+                "Range": [
+                  273,
+                  274
+                ]
+              },
+              {
+                "Single": 285
+              },
+              {
+                "Single": 288
+              },
+              {
+                "Single": 291
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/sequentialMemory/SequentialMemoryGame.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_0fde36cedff583",
+        "line_ranges": [
+          {
+            "Single": 194
+          },
+          {
+            "Single": 209
+          },
+          {
+            "Range": [
+              260,
+              261
+            ]
+          },
+          {
+            "Range": [
+              275,
+              276
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389ded0eb1e94f07fccea",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 194
+              },
+              {
+                "Single": 209
+              },
+              {
+                "Range": [
+                  260,
+                  261
+                ]
+              },
+              {
+                "Range": [
+                  275,
+                  276
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/shapeMemory/ShapeMemoryGame.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_a5265b6da62094",
+        "line_ranges": [
+          {
+            "Single": 183
+          },
+          {
+            "Single": 198
+          },
+          {
+            "Range": [
+              249,
+              250
+            ]
+          },
+          {
+            "Single": 263
+          },
+          {
+            "Single": 265
+          },
+          {
+            "Single": 269
+          },
+          {
+            "Single": 274
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389efd0eb1e94f07fcd27",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 183
+              },
+              {
+                "Single": 198
+              },
+              {
+                "Range": [
+                  249,
+                  250
+                ]
+              },
+              {
+                "Single": 263
+              },
+              {
+                "Single": 265
+              },
+              {
+                "Single": 269
+              },
+              {
+                "Single": 274
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/games/shapeMemory/ShapeTile.tsx": [
+      {
+        "hash": "s_5226016730cf25::t_a6344b73c191c8",
+        "line_ranges": [
+          {
+            "Single": 68
+          },
+          {
+            "Single": 71
+          },
+          {
+            "Single": 79
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389e9d0eb1e94f07fcd09",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 68
+              },
+              {
+                "Single": 71
+              },
+              {
+                "Single": 79
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/index.css": [
+      {
+        "hash": "s_5226016730cf25::t_cf603f86c7f6cd",
+        "line_ranges": [
+          {
+            "Single": 53
+          },
+          {
+            "Single": 61
+          },
+          {
+            "Single": 65
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5389b7d0eb1e94f07fcc7d",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 53
+              },
+              {
+                "Single": 61
+              },
+              {
+                "Single": 65
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_5226016730cf25": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_0fde36cedff583": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_83c7891a64d409": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_85ac4ece3780ac": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_a5265b6da62094": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_a6344b73c191c8": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_c1100c388c4687": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_cf603f86c7f6cd": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_5226016730cf25::t_f60d67af8f51a3": {
+      "tool": "trae",
+      "conversation_id": "6a5332253f67b59dbadc6683",
+      "session_id": "6a5332253f67b59dbadc6683",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
