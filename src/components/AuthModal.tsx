@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -65,8 +66,8 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
     onClose()
   }
 
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 px-4 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/40 px-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-[30px] border border-white/80 bg-white p-5 shadow-2xl shadow-slate-900/20">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -136,6 +137,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
           ) : null}
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
