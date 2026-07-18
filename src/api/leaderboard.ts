@@ -4,6 +4,7 @@ import { isBetterScore } from '@/utils/storage'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 type ChallengeLeaderboardRow = {
+  userId?: number | null
   username: string
   gameType: GameId
   maxLevel: number
@@ -11,6 +12,7 @@ type ChallengeLeaderboardRow = {
 }
 
 type FixedLeaderboardRow = {
+  userId?: number | null
   username: string
   gameType: GameId
   difficulty: number
@@ -40,6 +42,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 function challengeRowToBestScore(row: ChallengeLeaderboardRow): BestScore {
   return {
     gameId: row.gameType,
+    username: row.username,
     bestLevel: row.maxLevel,
     bestScore: row.maxLevel,
     updatedAt: new Date(row.updatedAt).getTime() || Date.now(),
@@ -80,6 +83,7 @@ function mergeFixedScores(scores: BestScoreMap, rows: FixedLeaderboardRow[]) {
 
     nextScores[row.gameType] = {
       gameId: row.gameType,
+      username: row.username,
       bestLevel: current?.bestLevel ?? 0,
       bestScore: current?.bestScore ?? 0,
       bestAccuracy: current?.bestAccuracy,
@@ -107,9 +111,14 @@ export async function fetchLeaderboardScores() {
   return mergeFixedScores(mergeChallengeScores({}, challengeRows), fixedRows)
 }
 
-export function submitChallengeScore(candidate: BestScore) {
+export function submitChallengeScore(candidate: BestScore, token?: string) {
   return requestJson<{ ok: true }>('/leaderboard/challenge', {
     method: 'POST',
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : undefined,
     body: JSON.stringify({
       gameType: candidate.gameId,
       maxLevel: candidate.bestLevel,
@@ -117,12 +126,17 @@ export function submitChallengeScore(candidate: BestScore) {
   })
 }
 
-export function submitFixedAccuracy(gameId: GameId, difficulty: number, questionCount: number, accuracy: number) {
+export function submitFixedAccuracy(gameId: GameId, difficulty: number, questionCount: number, accuracy: number, token?: string) {
   const normalizedAccuracy = Math.max(0, Math.min(100, accuracy))
   const correctCount = Math.round((normalizedAccuracy / 100) * questionCount)
 
   return requestJson<{ ok: true }>('/leaderboard/fixed', {
     method: 'POST',
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : undefined,
     body: JSON.stringify({
       gameType: gameId,
       difficulty,

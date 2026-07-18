@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { fetchLeaderboardScores, submitChallengeScore, submitFixedAccuracy } from '@/api/leaderboard'
 import type { BestScore, BestScoreMap, GameId } from '@/types/game'
 import { isBetterScore, readBestScores, writeBestScores } from '@/utils/storage'
+import { useAuth } from './useAuth'
 
 export function useBestScores() {
+  const { token, user } = useAuth()
   const [bestScores, setBestScores] = useState<BestScoreMap>({})
 
   const refreshBestScores = useCallback(async () => {
@@ -33,17 +35,21 @@ export function useBestScores() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [token])
 
   const saveBestScore = useCallback((candidate: BestScore) => {
     const currentScores = readBestScores()
     const current = currentScores[candidate.gameId]
-    const isNewBest = isBetterScore(current, candidate)
+    const scoreWithUser = {
+      ...candidate,
+      username: user?.username ?? candidate.username,
+    }
+    const isNewBest = isBetterScore(current, scoreWithUser)
 
     if (isNewBest) {
       const nextScores = {
         ...currentScores,
-        [candidate.gameId]: candidate,
+        [candidate.gameId]: scoreWithUser,
       }
       writeBestScores(nextScores)
       setBestScores(nextScores)
@@ -51,14 +57,16 @@ export function useBestScores() {
       setBestScores(currentScores)
     }
 
-    submitChallengeScore(candidate)
-      .then(refreshBestScores)
-      .catch(() => {
-        setBestScores(readBestScores())
-      })
+    if (token) {
+      submitChallengeScore(scoreWithUser, token)
+        .then(refreshBestScores)
+        .catch(() => {
+          setBestScores(readBestScores())
+        })
+    }
 
     return isNewBest
-  }, [refreshBestScores])
+  }, [refreshBestScores, token, user?.username])
 
   const savePracticeAccuracy = useCallback((gameId: GameId, level: number, questionCount: number, accuracy: number) => {
     const currentScores = readBestScores()
@@ -71,6 +79,7 @@ export function useBestScores() {
     if (isNewBest) {
       const nextScore: BestScore = {
         gameId,
+        username: user?.username ?? current?.username,
         bestLevel: current?.bestLevel ?? 0,
         bestScore: current?.bestScore ?? 0,
         bestAccuracy: current?.bestAccuracy,
@@ -94,14 +103,16 @@ export function useBestScores() {
       setBestScores(currentScores)
     }
 
-    submitFixedAccuracy(gameId, level, questionCount, accuracy)
-      .then(refreshBestScores)
-      .catch(() => {
-        setBestScores(readBestScores())
-      })
+    if (token) {
+      submitFixedAccuracy(gameId, level, questionCount, accuracy, token)
+        .then(refreshBestScores)
+        .catch(() => {
+          setBestScores(readBestScores())
+        })
+    }
 
     return isNewBest
-  }, [refreshBestScores])
+  }, [refreshBestScores, token, user?.username])
 
   return {
     bestScores,

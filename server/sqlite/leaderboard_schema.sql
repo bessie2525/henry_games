@@ -1,17 +1,29 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS challenge_leaderboard (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
   username TEXT NOT NULL DEFAULT '',
   game_type TEXT NOT NULL,
   max_level INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(game_type)
+  UNIQUE(user_id, game_type),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS fixed_leaderboard (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
   username TEXT NOT NULL DEFAULT '',
   game_type TEXT NOT NULL,
   difficulty INTEGER NOT NULL,
@@ -21,5 +33,6 @@ CREATE TABLE IF NOT EXISTS fixed_leaderboard (
   total_count INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(game_type, difficulty, question_count)
+  UNIQUE(user_id, game_type, difficulty, question_count),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );

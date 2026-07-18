@@ -33,6 +33,7 @@ export type GameConfig = {
 
 export type BestScore = {
   gameId: GameId
+  username?: string
   bestLevel: number
   bestScore: number
   bestAccuracy?: number

@@ -1,0 +1,37 @@
+import { useState } from 'react'
+import { LogIn, Settings, UserPlus } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import AuthModal from './AuthModal'
+
+type AuthMode = 'login' | 'register' | 'account'
+
+export default function AccountMenu() {
+  const { user, isLoading } = useAuth()
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null)
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2">
+        {user ? (
+          <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
+            <Settings size={17} />
+            {user.username}
+          </button>
+        ) : (
+          <>
+            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')} disabled={isLoading}>
+              <LogIn size={17} />
+              登录
+            </button>
+            <button className="btn-primary" type="button" onClick={() => setAuthMode('register')} disabled={isLoading}>
+              <UserPlus size={17} />
+              注册
+            </button>
+          </>
+        )}
+      </div>
+
+      {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
+    </>
+  )
+}

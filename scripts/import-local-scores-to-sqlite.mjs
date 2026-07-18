@@ -66,19 +66,11 @@ function buildChallengeSql(gameId, score) {
   }
 
   return `
-INSERT INTO challenge_leaderboard (username, game_type, max_level)
-VALUES ('', ${sqlString(gameId)}, ${sqlInteger(maxLevel)})
-ON CONFLICT(game_type) DO UPDATE SET
-  max_level = CASE
-    WHEN excluded.max_level > challenge_leaderboard.max_level
-    THEN excluded.max_level
-    ELSE challenge_leaderboard.max_level
-  END,
-  updated_at = CASE
-    WHEN excluded.max_level > challenge_leaderboard.max_level
-    THEN CURRENT_TIMESTAMP
-    ELSE challenge_leaderboard.updated_at
-  END;
+DELETE FROM challenge_leaderboard
+WHERE user_id IS NULL AND game_type = ${sqlString(gameId)};
+
+INSERT INTO challenge_leaderboard (user_id, username, game_type, max_level)
+VALUES (NULL, '', ${sqlString(gameId)}, ${sqlInteger(maxLevel)});
 `
 }
 
@@ -110,31 +102,16 @@ function buildFixedSql(gameId, score) {
       const correctCount = Math.round((normalizedAccuracy / 100) * questionCount)
 
       statements.push(`
+DELETE FROM fixed_leaderboard
+WHERE user_id IS NULL
+  AND game_type = ${sqlString(gameId)}
+  AND difficulty = ${sqlInteger(difficulty)}
+  AND question_count = ${sqlInteger(questionCount)};
+
 INSERT INTO fixed_leaderboard
-  (username, game_type, difficulty, question_count, best_accuracy, correct_count, total_count)
+  (user_id, username, game_type, difficulty, question_count, best_accuracy, correct_count, total_count)
 VALUES
-  ('', ${sqlString(gameId)}, ${sqlInteger(difficulty)}, ${sqlInteger(questionCount)}, ${sqlNumber(normalizedAccuracy)}, ${sqlInteger(correctCount)}, ${sqlInteger(questionCount)})
-ON CONFLICT(game_type, difficulty, question_count) DO UPDATE SET
-  best_accuracy = CASE
-    WHEN excluded.best_accuracy > fixed_leaderboard.best_accuracy
-    THEN excluded.best_accuracy
-    ELSE fixed_leaderboard.best_accuracy
-  END,
-  correct_count = CASE
-    WHEN excluded.best_accuracy > fixed_leaderboard.best_accuracy
-    THEN excluded.correct_count
-    ELSE fixed_leaderboard.correct_count
-  END,
-  total_count = CASE
-    WHEN excluded.best_accuracy > fixed_leaderboard.best_accuracy
-    THEN excluded.total_count
-    ELSE fixed_leaderboard.total_count
-  END,
-  updated_at = CASE
-    WHEN excluded.best_accuracy > fixed_leaderboard.best_accuracy
-    THEN CURRENT_TIMESTAMP
-    ELSE fixed_leaderboard.updated_at
-  END;
+  (NULL, '', ${sqlString(gameId)}, ${sqlInteger(difficulty)}, ${sqlInteger(questionCount)}, ${sqlNumber(normalizedAccuracy)}, ${sqlInteger(correctCount)}, ${sqlInteger(questionCount)});
 `)
     }
   }

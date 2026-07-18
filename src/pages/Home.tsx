@@ -1,4 +1,5 @@
 import { Activity, ArrowDown, Sparkles, Trophy } from 'lucide-react'
+import AccountMenu from '@/components/AccountMenu'
 import GameCard from '@/components/GameCard'
 import { games } from '@/data/games'
 import { useBestScores } from '@/hooks/useBestScores'
@@ -20,10 +21,13 @@ export default function Home() {
               <h1 className="text-xl font-black tracking-tight text-slate-950">认知训练小游戏</h1>
             </div>
           </div>
-          <a className="btn-secondary justify-center" href="#games">
-            查看游戏
-            <ArrowDown size={17} />
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <AccountMenu />
+            <a className="btn-secondary justify-center" href="#games">
+              查看游戏
+              <ArrowDown size={17} />
+            </a>
+          </div>
         </nav>
 
         <section className="relative overflow-hidden rounded-[44px] px-6 py-14 md:px-10 md:py-20">
@@ -66,6 +70,9 @@ export default function Home() {
               <div key={game.id} className="rounded-2xl border border-white/80 bg-white/85 px-3 py-2.5 shadow-sm shadow-cyan-100/40">
                 <p className="truncate text-xs font-bold text-slate-500">{game.name}</p>
                 <p className="mt-1 truncate text-base font-black text-slate-950">{formatBestScore(game.id, bestScores[game.id])}</p>
+                <p className="mt-0.5 truncate text-[11px] font-bold text-cyan-700">
+                  用户：{bestScores[game.id] ? bestScores[game.id]?.username || '匿名' : '暂无用户'}
+                </p>
               </div>
             ))}
           </div>
