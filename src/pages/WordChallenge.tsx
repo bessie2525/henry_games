@@ -147,6 +147,11 @@ function wordAudioUrl(word: string) {
   return `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word.trim())}`
 }
 
+function randomPraise() {
+  const praises = ['Amazing', 'Fantastic', 'Good job', 'Perfect']
+  return praises[Math.floor(Math.random() * praises.length)]
+}
+
 async function playWordAudio(word: string) {
   const audio = new Audio(wordAudioUrl(word))
   audio.preload = 'auto'
@@ -957,12 +962,13 @@ export default function WordChallenge() {
                           setError('')
                           setSkyFeedback('')
                           setSkyPassed((current) => new Set(current).add(skyIndex))
-                          setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
                           setIsAutoReading(true)
                           try {
+                            await speakWord(randomPraise(), setError)
                             await speakWord(skyWord.word, setError)
                           } finally {
                             setIsAutoReading(false)
+                            setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
                             if (skyIndex + 1 < skyWords.length) {
                               setSkyIndex(skyIndex + 1)
                             } else {
