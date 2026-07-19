@@ -143,14 +143,37 @@ function resumeSpeechSynthesis() {
   }
 }
 
-function speakWord(word: string, onError?: (message: string) => void) {
+function wordAudioUrl(word: string) {
+  return `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word.trim())}`
+}
+
+async function playWordAudio(word: string) {
+  const audio = new Audio(wordAudioUrl(word))
+  audio.preload = 'auto'
+  audio.volume = 1
+  await audio.play()
+}
+
+async function speakWord(word: string, onError?: (message: string) => void) {
+  const normalizedWord = word.trim()
+  if (!normalizedWord) {
+    return
+  }
+
+  try {
+    await playWordAudio(normalizedWord)
+    return
+  } catch {
+    // Fall through to browser speech synthesis when the network audio cannot play.
+  }
+
   if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-    onError?.('当前浏览器不支持自动朗读，请换用 Safari 或 Chrome。')
+    onError?.('音频发音没有播放成功，当前浏览器也不支持自动朗读。请检查手机音量或换用 Chrome。')
     return
   }
 
   let hasStarted = false
-  const utterance = new SpeechSynthesisUtterance(word)
+  const utterance = new SpeechSynthesisUtterance(normalizedWord)
   utterance.lang = 'en-US'
   utterance.rate = 0.85
   utterance.pitch = 1
