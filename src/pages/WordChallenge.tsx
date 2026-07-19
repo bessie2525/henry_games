@@ -137,12 +137,19 @@ function pickSpeechVoice(voices: SpeechSynthesisVoice[]) {
   )
 }
 
+function resumeSpeechSynthesis() {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.resume()
+  }
+}
+
 function speakWord(word: string, onError?: (message: string) => void) {
   if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
     onError?.('当前浏览器不支持自动朗读，请换用 Safari 或 Chrome。')
     return
   }
 
+  let hasStarted = false
   const utterance = new SpeechSynthesisUtterance(word)
   utterance.lang = 'en-US'
   utterance.rate = 0.85
@@ -153,20 +160,28 @@ function speakWord(word: string, onError?: (message: string) => void) {
     utterance.voice = voice
   }
 
-  utterance.onerror = () => {
-    onError?.('朗读没有成功播放。请确认手机未静音，并在 Safari 或 Chrome 中打开页面后再点一次朗读。')
+  utterance.onstart = () => {
+    hasStarted = true
   }
 
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.resume()
-  window.setTimeout(() => {
-    try {
-      window.speechSynthesis.resume()
-      window.speechSynthesis.speak(utterance)
-    } catch {
-      onError?.('朗读没有成功播放。请确认手机浏览器允许网页播放声音。')
-    }
-  }, 80)
+  utterance.onerror = () => {
+    onError?.('朗读没有成功播放。请确认手机未静音，并检查 Android 是否启用了系统文字转语音服务。')
+  }
+
+  try {
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.resume()
+    window.speechSynthesis.speak(utterance)
+    window.speechSynthesis.resume()
+
+    window.setTimeout(() => {
+      if (!hasStarted && !window.speechSynthesis.speaking) {
+        onError?.('朗读没有启动。请在 Android 系统设置中启用“文字转语音输出”后，再点一次朗读。')
+      }
+    }, 1200)
+  } catch {
+    onError?.('朗读没有成功播放。请确认手机浏览器允许网页播放声音。')
+  }
 }
 
 function validateWords(words: WordChallengeWord[]) {
@@ -606,6 +621,7 @@ export default function WordChallenge() {
                       <button
                         className="btn-secondary justify-center"
                         type="button"
+                        onPointerDown={resumeSpeechSynthesis}
                         onClick={() => {
                           setError('')
                           speakWord(learnWord.word, setError)
@@ -648,6 +664,7 @@ export default function WordChallenge() {
                       <button
                         className="btn-secondary mx-auto mt-4 justify-center"
                         type="button"
+                        onPointerDown={resumeSpeechSynthesis}
                         onClick={() => {
                           setError('')
                           speakWord(meaningWord.word, setError)
