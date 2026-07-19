@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, BookOpen, Sparkles, Star } from 'lucide-react'
+import { Activity, BookOpen, LibraryBig, Sparkles, Star } from 'lucide-react'
 import AccountMenu from '@/components/AccountMenu'
 
 export default function Home() {
@@ -29,10 +29,10 @@ export default function Home() {
               选择今天要进入的学习模块。
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              首页先分成三个入口：认知训练小游戏、英语单词闯关和学生积分系统。进入对应模块后再处理具体任务。
+              首页先分成四个入口：认知训练小游戏、英语单词闯关、英语阅读小达人和学生积分系统。进入对应模块后再处理具体任务。
             </p>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Link className="group rounded-[32px] border border-cyan-100 bg-white/90 p-5 shadow-sm shadow-cyan-100 transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl hover:shadow-cyan-100" to="/cognitive-games">
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-600 text-white shadow-lg shadow-cyan-100">
                 <Sparkles size={24} />
@@ -48,6 +48,14 @@ export default function Home() {
               <h3 className="mt-4 text-2xl font-black text-slate-950">单词闯关</h3>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">查看每日单词任务，完成五个环节后领取英语闯关星星。</p>
               <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">进入单词闯关</span>
+            </Link>
+            <Link className="group rounded-[32px] border border-orange-100 bg-white/90 p-5 shadow-sm shadow-orange-100 transition hover:-translate-y-1 hover:border-orange-300 hover:shadow-xl hover:shadow-orange-100" to="/english-reading">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-100">
+                <LibraryBig size={24} />
+              </div>
+              <h3 className="mt-4 text-2xl font-black text-slate-950">英语阅读小达人</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">每天一篇小短文，读故事、点读生词、完成阅读理解闯关。</p>
+              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-orange-700">进入阅读</span>
             </Link>
             <Link className="group rounded-[32px] border border-amber-100 bg-white/90 p-5 shadow-sm shadow-amber-100 transition hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-100" to="/points">
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-100">

@@ -4,6 +4,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 
 const Home = lazy(() => import("@/pages/Home"));
 const CognitiveGames = lazy(() => import("@/pages/CognitiveGames"));
+const EnglishReading = lazy(() => import("@/pages/EnglishReading"));
 const Points = lazy(() => import("@/pages/Points"));
 const WordChallenge = lazy(() => import("@/pages/WordChallenge"));
 const ChimpTestGame = lazy(() => import("@/games/chimpTest/ChimpTestGame"));
@@ -31,6 +32,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/cognitive-games" element={<CognitiveGames />} />
+            <Route path="/english-reading" element={<EnglishReading />} />
             <Route path="/points" element={<Points />} />
             <Route path="/word-challenge" element={<WordChallenge />} />
             <Route path="/word-challenge/tasks/:taskId" element={<WordChallenge />} />
