@@ -105,7 +105,11 @@ export default function WordChallenge() {
   const [words, setWords] = useState<WordChallengeWord[]>(emptyWords)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [stage, setStage] = useState<Stage>('learn')
+  const [learnIndex, setLearnIndex] = useState(0)
+  const [heardWords, setHeardWords] = useState<Set<number>>(new Set())
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
+  const [meaningIndex, setMeaningIndex] = useState(0)
+  const [meaningHeardWords, setMeaningHeardWords] = useState<Set<number>>(new Set())
   const [meaningAnswers, setMeaningAnswers] = useState<Record<number, string>>({})
   const [orderIndex, setOrderIndex] = useState(0)
   const [orderAnswer, setOrderAnswer] = useState('')
@@ -143,7 +147,11 @@ export default function WordChallenge() {
 
   const resetChallenge = () => {
     setStage('learn')
+    setLearnIndex(0)
+    setHeardWords(new Set())
     setFlippedCards(new Set())
+    setMeaningIndex(0)
+    setMeaningHeardWords(new Set())
     setMeaningAnswers({})
     setOrderIndex(0)
     setOrderAnswer('')
@@ -218,10 +226,14 @@ export default function WordChallenge() {
     }
   }
 
-  const meaningDone = activeWords.length > 0 && activeWords.every((word, index) => meaningAnswers[index] === word.meaning)
   const skyDone = activeWords.length > 0 && skyPassed.size === activeWords.length
   const spellingDone = activeWords.length > 0 && spellPassed.size === activeWords.length
   const sentenceDone = activeWords.length > 0 && sentencePassed.size === activeWords.length
+  const learnWord = activeWords[learnIndex]
+  const learnCanContinue = Boolean(learnWord && heardWords.has(learnIndex) && flippedCards.has(learnIndex))
+  const meaningWord = activeWords[meaningIndex]
+  const selectedMeaning = meaningAnswers[meaningIndex]
+  const meaningCanContinue = Boolean(meaningWord && meaningHeardWords.has(meaningIndex) && selectedMeaning)
 
   if (isLoading) {
     return (
@@ -422,95 +434,143 @@ export default function WordChallenge() {
             ) : null}
 
             {stage === 'learn' ? (
-              <section className="grid gap-4 md:grid-cols-2">
-                {activeWords.map((item, index) => {
-                  const flipped = flippedCards.has(index)
-                  return (
+              <section className="panel">
+                {learnWord ? (
+                  <div className="mx-auto max-w-3xl text-center">
+                    <p className="text-sm font-black text-blue-600">第 {learnIndex + 1} / {activeWords.length} 个单词</p>
                     <button
-                      key={index}
-                      className="min-h-48 rounded-[30px] border border-blue-100 bg-white p-5 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5"
+                      className="mt-4 min-h-80 w-full rounded-[34px] border border-blue-100 bg-white p-6 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5"
                       type="button"
                       onClick={() =>
                         setFlippedCards((current) => {
                           const next = new Set(current)
-                          if (next.has(index)) {
-                            next.delete(index)
+                          if (next.has(learnIndex)) {
+                            next.delete(learnIndex)
                           } else {
-                            next.add(index)
+                            next.add(learnIndex)
                           }
                           return next
                         })
                       }
                     >
-                      {!flipped ? (
-                        <>
-                          <p className="text-3xl font-black text-slate-950">{item.word}</p>
-                          <p className="mt-1 text-lg font-bold text-blue-600">{item.phonetic}</p>
-                          <span className="mt-4 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">点卡片看中文和例句</span>
-                        </>
+                      {!flippedCards.has(learnIndex) ? (
+                        <div className="grid min-h-64 place-items-center text-center">
+                          <div>
+                            <p className="text-6xl font-black tracking-tight text-slate-950 sm:text-7xl">{learnWord.word}</p>
+                            <p className="mt-4 text-2xl font-black text-blue-600">{learnWord.phonetic}</p>
+                            <p className="mt-6 text-sm font-black text-blue-700">点卡片翻出中文意思和例句</p>
+                          </div>
+                        </div>
                       ) : (
-                        <>
-                          <p className="text-2xl font-black text-slate-950">{item.meaning}</p>
-                          <p className="mt-3 text-base font-semibold leading-7 text-slate-600">{item.example}</p>
-                          <span className="mt-4 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">再点一次翻回英文</span>
-                        </>
+                        <div className="min-h-64">
+                          <p className="text-4xl font-black text-slate-950">{learnWord.meaning}</p>
+                          <div className="mt-6 rounded-[28px] border border-amber-100 bg-amber-50 p-5">
+                            <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Example</p>
+                            <p className="mt-3 text-3xl font-black leading-10 text-amber-950">{learnWord.example}</p>
+                          </div>
+                          <span className="mt-5 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">已翻出中文和例句</span>
+                        </div>
                       )}
-                      <span
-                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          speakWord(item.word)
+                    </button>
+                    <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                      <button
+                        className="btn-secondary justify-center"
+                        type="button"
+                        onClick={() => {
+                          speakWord(learnWord.word)
+                          setHeardWords((current) => new Set(current).add(learnIndex))
                         }}
                       >
-                        <Volume2 size={16} />
-                        朗读
-                      </span>
-                    </button>
-                  )
-                })}
-                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700 md:col-span-2" type="button" onClick={() => setStage('meaning')}>
-                  开始选意思
-                </button>
+                        <Volume2 size={17} />
+                        朗读单词
+                      </button>
+                      <button
+                        className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
+                        type="button"
+                        disabled={!learnCanContinue}
+                        onClick={() => {
+                          if (learnIndex + 1 < activeWords.length) {
+                            setLearnIndex(learnIndex + 1)
+                          } else {
+                            setStage('meaning')
+                          }
+                        }}
+                      >
+                        {learnIndex + 1 < activeWords.length ? '下一个单词' : '开始选意思'}
+                      </button>
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-slate-500">
+                      需要先点“朗读单词”，并翻出中文意思和例句，才能继续。
+                    </p>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
             {stage === 'meaning' ? (
-              <section className="panel space-y-4">
-                {activeWords.map((item, index) => {
-                  const options = meaningOptions(activeWords, index)
-                  const selected = meaningAnswers[index]
-                  return (
-                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xl font-black text-slate-950">{item.word}</p>
-                        <button className="btn-secondary min-h-0 px-3 py-2" type="button" onClick={() => speakWord(item.word)}>
-                          <Volume2 size={15} />
-                        </button>
-                      </div>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {options.map((option) => (
-                          <button
-                            key={option}
-                            className={`rounded-2xl px-4 py-3 text-left text-sm font-black ${
-                              selected && option === item.meaning
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : selected === option
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-white text-slate-700'
-                            }`}
-                            type="button"
-                            onClick={() => setMeaningAnswers((current) => ({ ...current, [index]: option }))}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
+              <section className="panel">
+                {meaningWord ? (
+                  <div className="mx-auto max-w-3xl">
+                    <div className="rounded-[34px] bg-blue-50/80 p-5 text-center">
+                      <p className="text-sm font-black text-blue-600">第 {meaningIndex + 1} / {activeWords.length} 题</p>
+                      <p className="mt-3 text-5xl font-black text-slate-950">{meaningWord.word}</p>
+                      <button
+                        className="btn-secondary mx-auto mt-4 justify-center"
+                        type="button"
+                        onClick={() => {
+                          speakWord(meaningWord.word)
+                          setMeaningHeardWords((current) => new Set(current).add(meaningIndex))
+                        }}
+                      >
+                        <Volume2 size={17} />
+                        朗读
+                      </button>
                     </div>
-                  )
-                })}
-                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!meaningDone} onClick={() => setStage('order')}>
-                  进入字母归位
-                </button>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      {meaningOptions(activeWords, meaningIndex).map((option) => (
+                        <button
+                          key={option}
+                          className={`rounded-2xl px-5 py-4 text-left text-base font-black ${
+                            selectedMeaning && option === meaningWord.meaning
+                              ? 'bg-emerald-100 text-emerald-800 ring-4 ring-emerald-50'
+                              : selectedMeaning === option
+                                ? 'bg-rose-100 text-rose-800 ring-4 ring-rose-50'
+                                : 'bg-white text-slate-700 shadow-sm shadow-blue-100'
+                          }`}
+                          type="button"
+                          onClick={() => setMeaningAnswers((current) => ({ ...current, [meaningIndex]: option }))}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedMeaning ? (
+                      <div className="mt-5 rounded-[28px] border border-amber-100 bg-amber-50 p-5">
+                        <p className="text-sm font-black text-amber-700">
+                          {selectedMeaning === meaningWord.meaning ? '回答正确' : `答错了，正确答案是：${meaningWord.meaning}`}
+                        </p>
+                        <p className="mt-3 text-2xl font-black leading-9 text-amber-950">{meaningWord.example}</p>
+                      </div>
+                    ) : null}
+                    <button
+                      className="btn-primary mt-5 w-full bg-blue-600 shadow-blue-200 hover:bg-blue-700"
+                      type="button"
+                      disabled={!meaningCanContinue}
+                      onClick={() => {
+                        if (meaningIndex + 1 < activeWords.length) {
+                          setMeaningIndex(meaningIndex + 1)
+                        } else {
+                          setStage('order')
+                        }
+                      }}
+                    >
+                      {meaningIndex + 1 < activeWords.length ? '下一题' : '进入字母归位'}
+                    </button>
+                    <p className="mt-3 text-center text-sm font-bold text-slate-500">
+                      需要先朗读，并选择答案看到中文和例句，才能继续。
+                    </p>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
