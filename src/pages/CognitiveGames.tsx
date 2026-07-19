@@ -1,13 +1,19 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, ArrowLeft, Trophy } from 'lucide-react'
-import AccountMenu from '@/components/AccountMenu'
+import { Activity, ArrowLeft, Settings, Trophy } from 'lucide-react'
+import AuthModal from '@/components/AuthModal'
 import GameCard from '@/components/GameCard'
 import { games } from '@/data/games'
+import { useAuth } from '@/hooks/useAuth'
 import { useBestScores } from '@/hooks/useBestScores'
 import { formatBestScore } from '@/utils/storage'
 
+type AuthMode = 'login' | 'account'
+
 export default function CognitiveGames() {
+  const { user } = useAuth()
   const { bestScores } = useBestScores()
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null)
 
   return (
     <main className="min-h-screen px-4 py-6 md:py-8">
@@ -23,11 +29,14 @@ export default function CognitiveGames() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <AccountMenu />
             <Link className="btn-secondary justify-center" to="/">
               <ArrowLeft size={17} />
-              返回学习中心
+              回到学习中心
             </Link>
+            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode(user ? 'account' : 'login')}>
+              <Settings size={17} />
+              帐户设置
+            </button>
           </div>
         </nav>
 
@@ -84,6 +93,7 @@ export default function CognitiveGames() {
           </div>
         </section>
       </div>
+      {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
     </main>
   )
 }

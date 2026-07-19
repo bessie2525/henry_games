@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, LogIn, Pencil, Plus, RotateCcw, Save, Star, Trash2, Volume2 } from 'lucide-react'
+import { ArrowLeft, LogIn, Pencil, Plus, RotateCcw, Save, Settings, Star, Trash2, Volume2 } from 'lucide-react'
 import {
   completeWordChallengeTask,
   createWordChallengeTask,
@@ -11,7 +11,7 @@ import AuthModal from '@/components/AuthModal'
 import { useAuth } from '@/hooks/useAuth'
 import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge'
 
-type AuthMode = 'login' | 'register'
+type AuthMode = 'login' | 'register' | 'account'
 type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
 type ChallengeStage = Exclude<Stage, 'done'>
 const minWordChallengeWords = 2
@@ -577,10 +577,16 @@ export default function WordChallenge() {
               <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
               <h1 className="text-xl font-black text-slate-950">英语单词闯关</h1>
             </div>
-            <Link className="btn-secondary justify-center" to="/">
-              <Activity size={17} />
-              认知训练小游戏
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link className="btn-secondary justify-center" to="/">
+                <ArrowLeft size={17} />
+                回到学习中心
+              </Link>
+              <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')}>
+                <Settings size={17} />
+                帐户设置
+              </button>
+            </div>
           </nav>
           <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
             <p className="text-5xl">🔤</p>
@@ -609,14 +615,14 @@ export default function WordChallenge() {
             <p className="mt-1 text-sm font-semibold text-slate-500">当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary justify-center" to="/points">
-              <Star size={17} />
-              学生积分系统
-            </Link>
             <Link className="btn-secondary justify-center" to="/">
-              <Activity size={17} />
-              认知训练小游戏
+              <ArrowLeft size={17} />
+              回到学习中心
             </Link>
+            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
+              <Settings size={17} />
+              帐户设置
+            </button>
           </div>
         </nav>
 
@@ -1263,6 +1269,7 @@ export default function WordChallenge() {
           </section>
         )}
       </div>
+      {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
     </main>
   )
 }

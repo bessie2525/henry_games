@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, BookOpen, LogIn, Pencil, Save, Settings, Sparkles, Star, UserPlus } from 'lucide-react'
+import { ArrowLeft, LogIn, Pencil, Save, Settings, Sparkles, Star, UserPlus } from 'lucide-react'
 import { createPointRecord, fetchPointRecords, fetchPointStudents, fetchPointSummary, updatePointRecord } from '@/api/points'
 import AuthModal from '@/components/AuthModal'
 import { pointCategories, pointCategoryMap } from '@/data/pointCategories'
@@ -212,10 +212,16 @@ export default function Points() {
                 <h1 className="text-xl font-black tracking-tight text-slate-950">学生积分系统</h1>
               </div>
             </div>
-            <Link className="btn-secondary justify-center" to="/">
-              <Activity size={17} />
-              认知训练小游戏
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link className="btn-secondary justify-center" to="/">
+                <ArrowLeft size={17} />
+                回到学习中心
+              </Link>
+              <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')}>
+                <Settings size={17} />
+                帐户设置
+              </button>
+            </div>
           </nav>
 
           <section className="overflow-hidden rounded-[38px] border border-amber-100 bg-white/90 p-6 text-center shadow-sm shadow-amber-100/80 backdrop-blur sm:p-10">
@@ -262,18 +268,14 @@ export default function Points() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link className="btn-secondary justify-center" to="/">
+              <ArrowLeft size={17} />
+              回到学习中心
+            </Link>
             <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
               <Settings size={17} />
-              账户设置
+              帐户设置
             </button>
-            <Link className="btn-secondary justify-center" to="/word-challenge">
-              <BookOpen size={17} />
-              英语单词闯关
-            </Link>
-            <Link className="btn-secondary justify-center" to="/">
-              <Activity size={17} />
-              认知训练小游戏
-            </Link>
           </div>
         </nav>
 
