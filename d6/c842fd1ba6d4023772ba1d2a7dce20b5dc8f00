@@ -1,0 +1,202 @@
+src/pages/WordChallenge.tsx
+  s_7cbabd6e8b49b0::t_ea7b9d0e3e9979 7,453-482,485 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9c31e203c93669e20bab","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":7},{"Range":[453,482]},{"Single":485}]}]}
+  s_7cbabd6e8b49b0::t_d58943c6d94834 764,801-832 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9c3ae203c93669e20bc5","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":764},{"Range":[801,832]}]}]}
+  s_7cbabd6e8b49b0::t_752b8bf8a92bdb 483-484
+  s_7cbabd6e8b49b0::t_b2b68d29ee0019 486-487
+src/api/wordChallenge.ts
+  s_7cbabd6e8b49b0::t_7abccb54fcfbc6 69-74 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9c2be203c93669e20b92","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[69,74]}]}]}
+server/leaderboard-api.cjs
+  s_7cbabd6e8b49b0::t_630b7ab38a1de4 852-871 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9c1fe203c93669e20b78","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[852,871]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d6c842fd1ba6d4023772ba1d2a7dce20b5dc8f00",
+  "prompts": {},
+  "humans": {
+    "h_1c39b08af7a710": {
+      "author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_7cbabd6e8b49b0": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a538a3cd0eb1e94f07fcd6d",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "attestation_metadata": {
+    "server/leaderboard-api.cjs": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_630b7ab38a1de4",
+        "line_ranges": [
+          {
+            "Range": [
+              852,
+              871
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9c1fe203c93669e20b78",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  852,
+                  871
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/api/wordChallenge.ts": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_7abccb54fcfbc6",
+        "line_ranges": [
+          {
+            "Range": [
+              69,
+              74
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9c2be203c93669e20b92",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  69,
+                  74
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/pages/WordChallenge.tsx": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_ea7b9d0e3e9979",
+        "line_ranges": [
+          {
+            "Single": 7
+          },
+          {
+            "Range": [
+              453,
+              482
+            ]
+          },
+          {
+            "Single": 485
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9c31e203c93669e20bab",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 7
+              },
+              {
+                "Range": [
+                  453,
+                  482
+                ]
+              },
+              {
+                "Single": 485
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_7cbabd6e8b49b0::t_d58943c6d94834",
+        "line_ranges": [
+          {
+            "Single": 764
+          },
+          {
+            "Range": [
+              801,
+              832
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9c3ae203c93669e20bc5",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 764
+              },
+              {
+                "Range": [
+                  801,
+                  832
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_7cbabd6e8b49b0": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_630b7ab38a1de4": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_7abccb54fcfbc6": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_d58943c6d94834": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_ea7b9d0e3e9979": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
