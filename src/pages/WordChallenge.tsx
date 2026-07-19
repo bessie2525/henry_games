@@ -58,6 +58,19 @@ function shuffleText(text: string) {
     .map((item) => item.letter)
 }
 
+function remainingShuffledLetters(word: string, answer: string) {
+  const usedLetters = answer.split('')
+  return shuffleText(cleanLetters(word)).filter((letter) => {
+    const usedIndex = usedLetters.indexOf(letter)
+    if (usedIndex === -1) {
+      return true
+    }
+
+    usedLetters.splice(usedIndex, 1)
+    return false
+  })
+}
+
 function meaningOptions(words: WordChallengeWord[], currentIndex: number) {
   return [words[currentIndex].meaning, ...words.filter((_, itemIndex) => itemIndex !== currentIndex).slice(0, 3).map((word) => word.meaning)]
     .map((meaning, index) => ({ meaning, sort: (meaning.charCodeAt(0) * 13 + currentIndex * 29 + index * 7) % 97 }))
@@ -583,14 +596,25 @@ export default function WordChallenge() {
                   {orderAnswer || ' '}
                 </div>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
-                  {shuffleText(cleanLetters(activeWords[orderIndex]?.word ?? '')).map((letter, index) => (
-                    <button key={`${letter}-${index}`} className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-slate-950 shadow-sm" type="button" onClick={() => setOrderAnswer((current) => current + letter)}>
+                  {remainingShuffledLetters(activeWords[orderIndex]?.word ?? '', orderAnswer).map((letter, index) => (
+                    <button
+                      key={`${letter}-${index}`}
+                      className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-slate-950 shadow-sm"
+                      type="button"
+                      onClick={() => {
+                        setError('')
+                        setOrderAnswer((current) => current + letter)
+                      }}
+                    >
                       {letter}
                     </button>
                   ))}
                 </div>
                 <div className="mt-5 flex justify-center gap-3">
-                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer('')}>
+                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer((current) => current.slice(0, -1))} disabled={!orderAnswer}>
+                    退格
+                  </button>
+                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer('')} disabled={!orderAnswer}>
                     清空
                   </button>
                   <button
@@ -600,6 +624,7 @@ export default function WordChallenge() {
                       const isCorrect = orderAnswer === cleanLetters(activeWords[orderIndex]?.word ?? '')
                       if (!isCorrect) {
                         setError(`正确答案是 ${activeWords[orderIndex]?.word}`)
+                        setOrderAnswer('')
                         return
                       }
                       setError('')
