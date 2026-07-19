@@ -172,7 +172,7 @@ export default function EnglishReading() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
-          <article className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7">
+          <article className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">Read The Story</p>
@@ -207,7 +207,7 @@ export default function EnglishReading() {
             </div>
           </article>
 
-          <aside className="space-y-5 lg:sticky lg:top-6">
+          <aside className="space-y-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             <section className="rounded-[34px] border border-teal-100 bg-white/90 p-5 shadow-sm shadow-teal-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -220,7 +220,7 @@ export default function EnglishReading() {
                 </button>
               </div>
               <div className="mt-4 rounded-3xl bg-teal-50 px-4 py-3 text-sm font-black text-teal-800">
-                已答 {answeredCount} / {article.questions.length}，答对 {correctCount} 题。问题和文章在同一页，答错后可以马上回原文对照。
+                已答 {answeredCount} / {article.questions.length}，答对 {correctCount} 题。
               </div>
 
               <div className="mt-5 space-y-4">
