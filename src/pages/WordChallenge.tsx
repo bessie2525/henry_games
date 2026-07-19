@@ -520,12 +520,12 @@ export default function WordChallenge() {
             <p className="mt-3 font-semibold text-slate-500">{isAdmin ? '请先发布一个包含 10 个单词的任务。' : '等待管理员发布后，这里会自动显示。'}</p>
           </section>
         ) : (
-          <section className="space-y-5">
-            <div className="rounded-[38px] border border-blue-100 bg-white/90 p-5 shadow-sm shadow-blue-100">
+          <section className="space-y-4 sm:space-y-5">
+            <div className="rounded-[28px] border border-blue-100 bg-white/90 p-4 shadow-sm shadow-blue-100 sm:rounded-[38px] sm:p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Today Task</p>
-                  <h2 className="mt-2 text-3xl font-black text-slate-950">{selectedTask.title}</h2>
+                  <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">{selectedTask.title}</h2>
                   <p className="mt-1 text-sm font-bold text-slate-500">{selectedTask.taskDate} · 完成后自动增加 2 颗英语闯关星星</p>
                 </div>
                 <button className="btn-secondary justify-center" type="button" onClick={resetChallenge}>
@@ -533,14 +533,14 @@ export default function WordChallenge() {
                   重新开始
                 </button>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                 {stages.map((item) => {
                   const isActive = stage === item.id
                   const isCompleted = stageCompletions[item.id]
                   return (
                     <button
                       key={item.id}
-                      className={`rounded-2xl px-3 py-2 text-sm font-black transition ${
+                      className={`rounded-2xl px-3 py-2 text-xs font-black transition sm:text-sm ${
                         isCompleted
                           ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-200 shadow-sm shadow-emerald-100'
                           : isActive
@@ -569,7 +569,7 @@ export default function WordChallenge() {
                   <div className="mx-auto max-w-3xl text-center">
                     <p className="text-sm font-black text-blue-600">第 {learnIndex + 1} / {learnWords.length} 个单词</p>
                     <button
-                      className="mt-4 min-h-80 w-full rounded-[34px] border border-blue-100 bg-white p-6 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5"
+                      className="mt-4 min-h-64 w-full rounded-[28px] border border-blue-100 bg-white p-4 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5 sm:min-h-80 sm:rounded-[34px] sm:p-6"
                       type="button"
                       onClick={() =>
                         setFlippedCards((current) => {
@@ -584,19 +584,19 @@ export default function WordChallenge() {
                       }
                     >
                       {!flippedCards.has(learnIndex) ? (
-                        <div className="grid min-h-64 place-items-center text-center">
+                        <div className="grid min-h-56 place-items-center text-center sm:min-h-64">
                           <div>
-                            <p className="text-6xl font-black tracking-tight text-slate-950 sm:text-7xl">{learnWord.word}</p>
-                            <p className="mt-4 text-2xl font-black text-blue-600">{learnWord.phonetic}</p>
+                            <p className="whitespace-nowrap text-[clamp(2.6rem,13vw,4.5rem)] font-black tracking-tight text-slate-950">{learnWord.word}</p>
+                            <p className="mt-4 text-xl font-black text-blue-600 sm:text-2xl">{learnWord.phonetic}</p>
                             <p className="mt-6 text-sm font-black text-blue-700">点卡片翻出中文意思和例句</p>
                           </div>
                         </div>
                       ) : (
-                        <div className="min-h-64">
-                          <p className="text-4xl font-black text-slate-950">{learnWord.meaning}</p>
-                          <div className="mt-6 rounded-[28px] border border-amber-100 bg-amber-50 p-5">
+                        <div className="min-h-56 sm:min-h-64">
+                          <p className="text-3xl font-black text-slate-950 sm:text-4xl">{learnWord.meaning}</p>
+                          <div className="mt-5 rounded-[24px] border border-amber-100 bg-amber-50 p-4 sm:mt-6 sm:rounded-[28px] sm:p-5">
                             <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Example</p>
-                            <p className="mt-3 text-3xl font-black leading-10 text-amber-950">{learnWord.example}</p>
+                            <p className="mt-3 text-2xl font-black leading-8 text-amber-950 sm:text-3xl sm:leading-10">{learnWord.example}</p>
                           </div>
                           <span className="mt-5 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">已翻出中文和例句</span>
                         </div>
@@ -642,9 +642,9 @@ export default function WordChallenge() {
               <section className="panel">
                 {meaningWord ? (
                   <div className="mx-auto max-w-3xl">
-                    <div className="rounded-[34px] bg-blue-50/80 p-5 text-center">
+                    <div className="rounded-[28px] bg-blue-50/80 p-4 text-center sm:rounded-[34px] sm:p-5">
                       <p className="text-sm font-black text-blue-600">第 {meaningIndex + 1} / {meaningWords.length} 题</p>
-                      <p className="mt-3 text-5xl font-black text-slate-950">{meaningWord.word}</p>
+                      <p className="mt-3 whitespace-nowrap text-[clamp(2.4rem,12vw,3rem)] font-black text-slate-950">{meaningWord.word}</p>
                       <button
                         className="btn-secondary mx-auto mt-4 justify-center"
                         type="button"
@@ -681,7 +681,7 @@ export default function WordChallenge() {
                         <p className="text-sm font-black text-amber-700">
                           {selectedMeaning === meaningWord.meaning ? '回答正确' : `答错了，正确答案是：${meaningWord.meaning}`}
                         </p>
-                        <p className="mt-3 text-2xl font-black leading-9 text-amber-950">{meaningWord.example}</p>
+                        <p className="mt-3 text-xl font-black leading-8 text-amber-950 sm:text-2xl sm:leading-9">{meaningWord.example}</p>
                       </div>
                     ) : null}
                     <button
@@ -709,9 +709,9 @@ export default function WordChallenge() {
             {stage === 'order' ? (
               <section className="panel text-center">
                 <p className="text-sm font-black text-blue-600">第 {orderIndex + 1} / {orderWords.length} 个</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">{orderWord?.meaning}</h2>
+                <h2 className="mt-2 text-xl font-black text-slate-950 sm:text-2xl">{orderWord?.meaning}</h2>
                 <p className="mt-2 text-sm font-bold text-slate-500">点击字母，拼回完整单词</p>
-                <div className="mx-auto mt-5 min-h-16 max-w-xl rounded-3xl bg-blue-50 px-4 py-4 text-3xl font-black tracking-[0.2em] text-blue-800">
+                <div className="mx-auto mt-5 min-h-14 max-w-xl overflow-x-auto rounded-3xl bg-blue-50 px-4 py-3 text-2xl font-black tracking-[0.16em] text-blue-800 sm:min-h-16 sm:py-4 sm:text-3xl sm:tracking-[0.2em]">
                   {orderAnswer || ' '}
                 </div>
                 {orderFeedback ? (
@@ -723,7 +723,7 @@ export default function WordChallenge() {
                   {remainingShuffledLetters(orderWord?.word ?? '', orderAnswer).map((letter, index) => (
                     <button
                       key={`${letter}-${index}`}
-                      className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-slate-950 shadow-sm"
+                      className="grid h-10 w-10 place-items-center rounded-xl bg-white text-lg font-black text-slate-950 shadow-sm sm:h-12 sm:w-12 sm:rounded-2xl sm:text-xl"
                       type="button"
                       onClick={() => {
                         setError('')
@@ -735,7 +735,7 @@ export default function WordChallenge() {
                     </button>
                   ))}
                 </div>
-                <div className="mt-5 flex justify-center gap-3">
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
                   <button
                     className="btn-secondary justify-center"
                     type="button"
@@ -791,38 +791,40 @@ export default function WordChallenge() {
                 {skyWord ? (
                   <div className="mx-auto max-w-3xl">
                     <p className="text-sm font-black text-blue-600">第 {skyIndex + 1} / {skyWords.length} 个</p>
-                    <h2 className="mt-2 text-2xl font-black text-slate-950">{skyWord.meaning}</h2>
+                    <h2 className="mt-2 text-xl font-black text-slate-950 sm:text-2xl">{skyWord.meaning}</h2>
                     <p className="mt-2 text-sm font-bold text-slate-500">把缺失的字母直接填回单词空格里</p>
-                    <div className="mt-6 flex flex-wrap items-center justify-center gap-2 rounded-[34px] bg-blue-50 px-4 py-6">
-                      {skyLetters.split('').map((letter, letterIndex) => {
-                        const missingIndex = skyMissingPositions.indexOf(letterIndex)
-                        if (missingIndex === -1) {
-                          return (
-                            <span key={`${letter}-${letterIndex}`} className="grid h-14 min-w-12 place-items-center rounded-2xl bg-white px-3 text-3xl font-black text-slate-950 shadow-sm">
-                              {letter}
-                            </span>
-                          )
-                        }
+                    <div className="mt-6 overflow-x-auto rounded-[28px] bg-blue-50 px-3 py-5 sm:rounded-[34px] sm:px-4 sm:py-6">
+                      <div className="inline-flex min-w-max flex-nowrap items-center justify-center gap-1.5 sm:gap-2">
+                        {skyLetters.split('').map((letter, letterIndex) => {
+                          const missingIndex = skyMissingPositions.indexOf(letterIndex)
+                          if (missingIndex === -1) {
+                            return (
+                              <span key={`${letter}-${letterIndex}`} className="grid h-10 min-w-8 place-items-center rounded-xl bg-white px-2 text-xl font-black text-slate-950 shadow-sm sm:h-14 sm:min-w-12 sm:rounded-2xl sm:px-3 sm:text-3xl">
+                                {letter}
+                              </span>
+                            )
+                          }
 
-                        return (
-                          <input
-                            key={`${letter}-${letterIndex}`}
-                            aria-label={`填写第 ${letterIndex + 1} 个字母`}
-                            className="h-14 w-12 rounded-2xl border-2 border-blue-200 bg-white text-center text-3xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                            maxLength={1}
-                            value={skyAnswer[missingIndex]?.trim() ?? ''}
-                            onChange={(event) => {
-                              const nextLetter = event.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(-1)
-                              const currentSlots = Array.from({ length: skyMissingPositions.length }, (_, index) =>
-                                skyAnswer[index]?.trim() ? skyAnswer[index] : ' ',
-                              )
-                              currentSlots[missingIndex] = nextLetter || ' '
-                              setSkyFeedback('')
-                              setSkyAnswers((current) => ({ ...current, [skyIndex]: currentSlots.join('') }))
-                            }}
-                          />
-                        )
-                      })}
+                          return (
+                            <input
+                              key={`${letter}-${letterIndex}`}
+                              aria-label={`填写第 ${letterIndex + 1} 个字母`}
+                              className="h-10 w-8 rounded-xl border-2 border-blue-200 bg-white text-center text-xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl"
+                              maxLength={1}
+                              value={skyAnswer[missingIndex]?.trim() ?? ''}
+                              onChange={(event) => {
+                                const nextLetter = event.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(-1)
+                                const currentSlots = Array.from({ length: skyMissingPositions.length }, (_, index) =>
+                                  skyAnswer[index]?.trim() ? skyAnswer[index] : ' ',
+                                )
+                                currentSlots[missingIndex] = nextLetter || ' '
+                                setSkyFeedback('')
+                                setSkyAnswers((current) => ({ ...current, [skyIndex]: currentSlots.join('') }))
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
                     </div>
                     {skyFeedback ? (
                       <div className="mx-auto mt-3 max-w-xl rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700">
@@ -877,9 +879,9 @@ export default function WordChallenge() {
                 {sentenceWord ? (
                   <div className="mx-auto max-w-3xl">
                     <p className="text-sm font-black text-blue-600">第 {sentenceIndex + 1} / {sentenceWords.length} 题</p>
-                    <div className="mt-4 rounded-[34px] bg-blue-50/80 p-5 text-left">
+                    <div className="mt-4 rounded-[28px] bg-blue-50/80 p-4 text-left sm:rounded-[34px] sm:p-5">
                       <p className="text-sm font-black text-blue-700">根据例句，把挖掉的单词填回来</p>
-                      <p className="mt-3 text-3xl font-black leading-10 text-slate-950">{blankExample(sentenceWord.example, sentenceWord.word)}</p>
+                      <p className="mt-3 text-2xl font-black leading-8 text-slate-950 sm:text-3xl sm:leading-10">{blankExample(sentenceWord.example, sentenceWord.word)}</p>
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                         <input
                           className="min-w-0 flex-1 rounded-2xl border border-blue-100 px-4 py-3 text-lg font-black lowercase outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
