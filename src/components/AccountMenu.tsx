@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogIn, Settings, Star, UserPlus } from 'lucide-react'
+import { BookOpen, LogIn, Settings, Star, UserPlus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import AuthModal from './AuthModal'
 
@@ -22,6 +22,10 @@ export default function AccountMenu() {
             <Link className="btn-primary" to="/points">
               <Star size={17} />
               积分系统
+            </Link>
+            <Link className="btn-secondary justify-center" to="/word-challenge">
+              <BookOpen size={17} />
+              单词闯关
             </Link>
             <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
               <Settings size={17} />

@@ -19,7 +19,8 @@ app.use(express.json({ limit: '32kb' }))
 
 db.exec(require('node:fs').readFileSync(schemaPath, 'utf8'))
 
-const pointCategories = new Set(['math', 'english', 'reading', 'writing', 'housework', 'other'])
+const pointCategories = new Set(['math', 'english', 'english_challenge', 'reading', 'writing', 'housework', 'other'])
+const wordChallengeStageCount = 5
 
 function isValidGameType(value) {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value)
@@ -63,6 +64,50 @@ function normalizeText(value, maxLength = 500) {
 
 function isValidPointCategory(value) {
   return typeof value === 'string' && pointCategories.has(value)
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+function normalizeWordChallengeWords(value) {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const words = value.map((item) => ({
+    word: normalizeText(item?.word, 40),
+    phonetic: normalizeText(item?.phonetic, 40),
+    image: normalizeText(item?.image, 20),
+    meaning: normalizeText(item?.meaning, 80),
+    example: normalizeText(item?.example, 180),
+  }))
+
+  if (
+    words.length !== 10 ||
+    words.some((item) => !item.word || !item.meaning || !item.example || !/^[A-Za-z][A-Za-z\s'-]*$/.test(item.word))
+  ) {
+    return null
+  }
+
+  return words
+}
+
+function publicWordChallengeTask(row, completedTaskIds = new Set()) {
+  return {
+    id: row.id,
+    taskDate: row.task_date,
+    title: row.title,
+    words: safeJsonParse(row.words_json, []),
+    createdByUserId: row.created_by_user_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    isCompleted: completedTaskIds.has(row.id),
+  }
 }
 
 function getStudentById(userId) {
@@ -207,6 +252,7 @@ app.patch('/api/auth/me', requireAuth, (req, res) => {
       db.prepare('UPDATE challenge_leaderboard SET username = ? WHERE user_id = ?').run(username, req.user.id)
       db.prepare('UPDATE fixed_leaderboard SET username = ? WHERE user_id = ?').run(username, req.user.id)
       db.prepare('UPDATE student_point_records SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
+      db.prepare('UPDATE word_challenge_completions SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
     })()
 
     const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(req.user.id)
@@ -586,6 +632,7 @@ app.get('/api/points/summary', requireAuth, (req, res) => {
         byCategory: {
           math: 0,
           english: 0,
+          english_challenge: 0,
           reading: 0,
           writing: 0,
           housework: 0,
@@ -647,6 +694,157 @@ app.patch('/api/points/records/:id', requireAuth, requireAdmin, (req, res) => {
   }
 
   res.json({ ok: true })
+})
+
+app.get('/api/word-challenge/tasks', requireAuth, (req, res) => {
+  const taskDate = typeof req.query.date === 'string' && isValidRecordDate(req.query.date) ? req.query.date : null
+  const where = []
+  const params = []
+
+  if (taskDate) {
+    where.push('task_date = ?')
+    params.push(taskDate)
+  }
+
+  const tasks = db
+    .prepare(
+      `
+      SELECT
+        id,
+        task_date,
+        title,
+        words_json,
+        created_by_user_id,
+        created_at,
+        updated_at
+      FROM word_challenge_tasks
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY task_date DESC, created_at DESC, id DESC
+      LIMIT 60
+    `,
+    )
+    .all(...params)
+
+  const completedTaskIds = new Set()
+  if (req.user.role === 'student' && tasks.length > 0) {
+    const completionRows = db
+      .prepare(
+        `
+        SELECT task_id AS taskId
+        FROM word_challenge_completions
+        WHERE student_user_id = ?
+      `,
+      )
+      .all(req.user.id)
+
+    for (const row of completionRows) {
+      completedTaskIds.add(row.taskId)
+    }
+  }
+
+  res.json({ tasks: tasks.map((task) => publicWordChallengeTask(task, completedTaskIds)) })
+})
+
+app.post('/api/word-challenge/tasks', requireAuth, requireAdmin, (req, res) => {
+  const taskDate = req.body?.taskDate
+  const title = normalizeText(req.body?.title, 80) || '每日英语单词闯关'
+  const words = normalizeWordChallengeWords(req.body?.words)
+
+  if (!isValidRecordDate(taskDate) || !words) {
+    return res.status(400).json({ error: 'Invalid word challenge task' })
+  }
+
+  const result = db
+    .prepare(
+      `
+      INSERT INTO word_challenge_tasks (task_date, title, words_json, created_by_user_id)
+      VALUES (?, ?, ?, ?)
+    `,
+    )
+    .run(taskDate, title, JSON.stringify(words), req.user.id)
+
+  const task = db.prepare('SELECT * FROM word_challenge_tasks WHERE id = ?').get(result.lastInsertRowid)
+
+  res.json({ ok: true, task: publicWordChallengeTask(task) })
+})
+
+app.patch('/api/word-challenge/tasks/:id', requireAuth, requireAdmin, (req, res) => {
+  const taskId = Number(req.params.id)
+  const taskDate = req.body?.taskDate
+  const title = normalizeText(req.body?.title, 80) || '每日英语单词闯关'
+  const words = normalizeWordChallengeWords(req.body?.words)
+
+  if (!Number.isInteger(taskId) || !isValidRecordDate(taskDate) || !words) {
+    return res.status(400).json({ error: 'Invalid word challenge task' })
+  }
+
+  const result = db
+    .prepare(
+      `
+      UPDATE word_challenge_tasks
+      SET task_date = ?, title = ?, words_json = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+    )
+    .run(taskDate, title, JSON.stringify(words), taskId)
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Word challenge task not found' })
+  }
+
+  const task = db.prepare('SELECT * FROM word_challenge_tasks WHERE id = ?').get(taskId)
+
+  res.json({ ok: true, task: publicWordChallengeTask(task) })
+})
+
+app.post('/api/word-challenge/tasks/:id/complete', requireAuth, (req, res) => {
+  const taskId = Number(req.params.id)
+  const completedStages = toInteger(req.body?.completedStages)
+
+  if (!Number.isInteger(taskId) || completedStages !== wordChallengeStageCount) {
+    return res.status(400).json({ error: 'Invalid completion' })
+  }
+
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Student permission required' })
+  }
+
+  const task = db.prepare('SELECT id, task_date, title FROM word_challenge_tasks WHERE id = ?').get(taskId)
+  if (!task) {
+    return res.status(404).json({ error: 'Word challenge task not found' })
+  }
+
+  const existing = db
+    .prepare('SELECT id, point_record_id AS pointRecordId FROM word_challenge_completions WHERE task_id = ? AND student_user_id = ?')
+    .get(taskId, req.user.id)
+
+  if (existing) {
+    return res.json({ ok: true, alreadyCompleted: true, pointRecordId: existing.pointRecordId })
+  }
+
+  const result = db.transaction(() => {
+    const pointResult = db
+      .prepare(
+        `
+        INSERT INTO student_point_records
+          (student_user_id, student_username, category, stars, record_date, detail, note, created_by_user_id)
+        VALUES
+          (?, ?, 'english_challenge', 2, ?, ?, ?, ?)
+      `,
+      )
+      .run(req.user.id, req.user.username, task.task_date, task.title, '完成英语单词闯关，系统自动加星', req.user.id)
+
+    db.prepare(
+      `
+      INSERT INTO word_challenge_completions (task_id, student_user_id, student_username, point_record_id)
+      VALUES (?, ?, ?, ?)
+    `,
+    ).run(taskId, req.user.id, req.user.username, pointResult.lastInsertRowid)
+
+    return pointResult.lastInsertRowid
+  })()
+
+  res.json({ ok: true, alreadyCompleted: false, pointRecordId: result, awardedStars: 2 })
 })
 
 app.listen(port, host, () => {

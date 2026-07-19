@@ -1,0 +1,640 @@
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Activity, CheckCircle2, LogIn, Pencil, Plus, RotateCcw, Save, Star, Volume2 } from 'lucide-react'
+import {
+  completeWordChallengeTask,
+  createWordChallengeTask,
+  fetchWordChallengeTasks,
+  updateWordChallengeTask,
+} from '@/api/wordChallenge'
+import AuthModal from '@/components/AuthModal'
+import { useAuth } from '@/hooks/useAuth'
+import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge'
+
+type AuthMode = 'login' | 'register'
+type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'spelling' | 'done'
+
+const stages: { id: Stage; name: string }[] = [
+  { id: 'learn', name: '学新词' },
+  { id: 'meaning', name: '选意思' },
+  { id: 'order', name: '字母归位' },
+  { id: 'sky', name: '字母天空' },
+  { id: 'spelling', name: '单词拼写' },
+]
+
+function todayString() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function emptyWords(): WordChallengeWord[] {
+  return Array.from({ length: 10 }, () => ({
+    word: '',
+    phonetic: '',
+    image: '⭐',
+    meaning: '',
+    example: '',
+  }))
+}
+
+function cleanLetters(word: string) {
+  return word.toLowerCase().replace(/[^a-z]/g, '')
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function shuffleText(text: string) {
+  return text
+    .split('')
+    .map((letter, index) => ({ letter, sort: (letter.charCodeAt(0) * 17 + index * 31) % 97 }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((item) => item.letter)
+}
+
+function meaningOptions(words: WordChallengeWord[], currentIndex: number) {
+  return [words[currentIndex].meaning, ...words.filter((_, itemIndex) => itemIndex !== currentIndex).slice(0, 3).map((word) => word.meaning)]
+    .map((meaning, index) => ({ meaning, sort: (meaning.charCodeAt(0) * 13 + currentIndex * 29 + index * 7) % 97 }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((item) => item.meaning)
+}
+
+function missingPositions(word: string) {
+  const letters = cleanLetters(word)
+  if (letters.length <= 2) {
+    return [0]
+  }
+
+  return [1, Math.max(2, letters.length - 2)]
+}
+
+function speakWord(word: string) {
+  if (!('speechSynthesis' in window)) {
+    return
+  }
+
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(word)
+  utterance.lang = 'en-US'
+  utterance.rate = 0.85
+  const voices = window.speechSynthesis.getVoices()
+  const usVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith('en-us'))
+  if (usVoice) {
+    utterance.voice = usVoice
+  }
+  window.speechSynthesis.speak(utterance)
+}
+
+function validateWords(words: WordChallengeWord[]) {
+  return words.length === 10 && words.every((item) => item.word.trim() && item.meaning.trim() && item.example.trim())
+}
+
+export default function WordChallenge() {
+  const { user, token, isLoading } = useAuth()
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null)
+  const [tasks, setTasks] = useState<WordChallengeTask[]>([])
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+  const [taskDate, setTaskDate] = useState(todayString())
+  const [title, setTitle] = useState('每日英语单词闯关')
+  const [words, setWords] = useState<WordChallengeWord[]>(emptyWords)
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
+  const [stage, setStage] = useState<Stage>('learn')
+  const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
+  const [meaningAnswers, setMeaningAnswers] = useState<Record<number, string>>({})
+  const [orderIndex, setOrderIndex] = useState(0)
+  const [orderAnswer, setOrderAnswer] = useState('')
+  const [orderPassed, setOrderPassed] = useState<Set<number>>(new Set())
+  const [skyAnswers, setSkyAnswers] = useState<Record<number, string>>({})
+  const [skyPassed, setSkyPassed] = useState<Set<number>>(new Set())
+  const [spellAnswers, setSpellAnswers] = useState<Record<number, string>>({})
+  const [spellPassed, setSpellPassed] = useState<Set<number>>(new Set())
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isAdmin = user?.role === 'admin'
+
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
+    [selectedTaskId, tasks],
+  )
+  const activeWords = selectedTask?.words ?? []
+
+  const loadTasks = useCallback(async () => {
+    if (!token || !user) {
+      return
+    }
+
+    const response = await fetchWordChallengeTasks(token, isAdmin ? {} : { date: todayString() })
+    setTasks(response.tasks)
+    setSelectedTaskId((current) => current ?? response.tasks[0]?.id ?? null)
+  }, [isAdmin, token, user])
+
+  useEffect(() => {
+    loadTasks().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '单词任务加载失败'))
+  }, [loadTasks])
+
+  const resetChallenge = () => {
+    setStage('learn')
+    setFlippedCards(new Set())
+    setMeaningAnswers({})
+    setOrderIndex(0)
+    setOrderAnswer('')
+    setOrderPassed(new Set())
+    setSkyAnswers({})
+    setSkyPassed(new Set())
+    setSpellAnswers({})
+    setSpellPassed(new Set())
+    setMessage('')
+    setError('')
+  }
+
+  useEffect(() => {
+    resetChallenge()
+  }, [selectedTaskId])
+
+  const updateWord = (index: number, patch: Partial<WordChallengeWord>) => {
+    setWords((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)))
+  }
+
+  const handleSaveTask = async (event: FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setMessage('')
+
+    if (!token) {
+      setError('请先登录')
+      return
+    }
+
+    if (!validateWords(words)) {
+      setError('请填写 10 个单词，每个单词至少包含英文、中文和例句')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      if (editingTaskId) {
+        await updateWordChallengeTask(token, editingTaskId, { taskDate, title, words })
+        setMessage('单词任务已更新')
+      } else {
+        await createWordChallengeTask(token, { taskDate, title, words })
+        setMessage('单词任务已发布')
+      }
+      setEditingTaskId(null)
+      setWords(emptyWords())
+      await loadTasks()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : '单词任务保存失败')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleComplete = async () => {
+    if (!token || !selectedTask) {
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const response = await completeWordChallengeTask(token, selectedTask.id)
+      setMessage(response.alreadyCompleted ? '这个任务之前已经完成过，积分不会重复增加' : '闯关完成，已自动增加 2 颗英语闯关星星')
+      setStage('done')
+      await loadTasks()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : '完成记录提交失败')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const meaningDone = activeWords.length > 0 && activeWords.every((word, index) => meaningAnswers[index] === word.meaning)
+  const skyDone = activeWords.length > 0 && skyPassed.size === activeWords.length
+  const spellingDone = activeWords.length > 0 && spellPassed.size === activeWords.length
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(59,130,246,0.18),transparent_30%),#eff6ff] px-4 py-6">
+        <div className="mx-auto max-w-5xl rounded-[30px] border border-blue-100 bg-white/85 p-5 font-bold text-blue-800">
+          正在加载英语单词闯关...
+        </div>
+      </main>
+    )
+  }
+
+  if (!user || !token) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(59,130,246,0.2),transparent_30%),#eff6ff] px-4 py-6">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <nav className="flex items-center justify-between rounded-[30px] border border-blue-100 bg-white/85 p-4 shadow-sm shadow-blue-100">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
+              <h1 className="text-xl font-black text-slate-950">英语单词闯关</h1>
+            </div>
+            <Link className="btn-secondary justify-center" to="/">
+              <Activity size={17} />
+              认知训练小游戏
+            </Link>
+          </nav>
+          <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
+            <p className="text-5xl">🔤</p>
+            <h2 className="mt-4 text-3xl font-black text-slate-950">请先登录后开始单词闯关</h2>
+            <p className="mx-auto mt-4 max-w-2xl font-semibold leading-7 text-slate-600">
+              管理员发布每日 10 个单词任务，学生完成五个环节后自动获得 2 颗英语闯关星星。
+            </p>
+            <button className="btn-primary mt-6 bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" onClick={() => setAuthMode('login')}>
+              <LogIn size={18} />
+              登录
+            </button>
+          </section>
+        </div>
+        {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(59,130,246,0.2),transparent_30%),radial-gradient(circle_at_85%_8%,rgba(251,191,36,0.18),transparent_28%),#eff6ff] px-4 py-6 md:py-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <nav className="flex flex-col gap-3 rounded-[30px] border border-blue-100 bg-white/85 p-4 shadow-sm shadow-blue-100 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-950">英语单词闯关</h1>
+            <p className="mt-1 text-sm font-semibold text-slate-500">当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link className="btn-secondary justify-center" to="/points">
+              <Star size={17} />
+              学生积分系统
+            </Link>
+            <Link className="btn-secondary justify-center" to="/">
+              <Activity size={17} />
+              认知训练小游戏
+            </Link>
+          </div>
+        </nav>
+
+        {error ? <div className="rounded-3xl bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">{error}</div> : null}
+        {message ? <div className="rounded-3xl bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">{message}</div> : null}
+
+        {isAdmin ? (
+          <section className="panel space-y-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Admin</p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">{editingTaskId ? '编辑单词任务' : '发布每日单词任务'}</h2>
+              </div>
+              <button
+                className="btn-secondary justify-center"
+                type="button"
+                onClick={() => {
+                  setEditingTaskId(null)
+                  setTaskDate(todayString())
+                  setTitle('每日英语单词闯关')
+                  setWords(emptyWords())
+                }}
+              >
+                <Plus size={17} />
+                新任务
+              </button>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleSaveTask}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-600">任务日期</span>
+                  <input
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                    type="date"
+                    value={taskDate}
+                    onChange={(event) => setTaskDate(event.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-600">任务标题</span>
+                  <input
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3">
+                {words.map((item, index) => (
+                  <div key={index} className="grid gap-2 rounded-3xl bg-blue-50/70 p-3 md:grid-cols-[1fr_1fr_0.7fr_1.2fr_2fr]">
+                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.word} onChange={(event) => updateWord(index, { word: event.target.value })} placeholder={`单词 ${index + 1}`} />
+                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.phonetic} onChange={(event) => updateWord(index, { phonetic: event.target.value })} placeholder="音标" />
+                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.image} onChange={(event) => updateWord(index, { image: event.target.value })} placeholder="图案" />
+                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.meaning} onChange={(event) => updateWord(index, { meaning: event.target.value })} placeholder="中文" />
+                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.example} onChange={(event) => updateWord(index, { example: event.target.value })} placeholder="英文例句" />
+                  </div>
+                ))}
+              </div>
+
+              <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="submit" disabled={isSubmitting}>
+                <Save size={18} />
+                {isSubmitting ? '保存中...' : editingTaskId ? '保存修改' : '发布任务'}
+              </button>
+            </form>
+          </section>
+        ) : null}
+
+        {isAdmin && tasks.length > 0 ? (
+          <section className="rounded-[30px] border border-white/80 bg-white/85 p-4 shadow-sm shadow-blue-100">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Tasks</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  className="rounded-3xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                  type="button"
+                  onClick={() => {
+                    setEditingTaskId(task.id)
+                    setTaskDate(task.taskDate)
+                    setTitle(task.title)
+                    setWords(task.words)
+                    setSelectedTaskId(task.id)
+                  }}
+                >
+                  <p className="text-sm font-black text-slate-950">{task.taskDate} · {task.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">共 {task.words.length} 个单词</p>
+                  <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700">
+                    <Pencil size={13} />
+                    编辑
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!selectedTask ? (
+          <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
+            <p className="text-5xl">📘</p>
+            <h2 className="mt-4 text-2xl font-black text-slate-950">{isAdmin ? '还没有单词任务' : '今天还没有单词任务'}</h2>
+            <p className="mt-3 font-semibold text-slate-500">{isAdmin ? '请先发布一个包含 10 个单词的任务。' : '等待管理员发布后，这里会自动显示。'}</p>
+          </section>
+        ) : (
+          <section className="space-y-5">
+            <div className="rounded-[38px] border border-blue-100 bg-white/90 p-5 shadow-sm shadow-blue-100">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Today Task</p>
+                  <h2 className="mt-2 text-3xl font-black text-slate-950">{selectedTask.title}</h2>
+                  <p className="mt-1 text-sm font-bold text-slate-500">{selectedTask.taskDate} · 完成后自动增加 2 颗英语闯关星星</p>
+                </div>
+                <button className="btn-secondary justify-center" type="button" onClick={resetChallenge}>
+                  <RotateCcw size={17} />
+                  重新开始
+                </button>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
+                {stages.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`rounded-2xl px-3 py-2 text-sm font-black transition ${
+                      stage === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-blue-50 text-blue-800'
+                    }`}
+                    type="button"
+                    onClick={() => setStage(item.id)}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedTask.isCompleted ? (
+              <div className="rounded-3xl bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">
+                这个任务已经完成过，积分已记录。仍然可以继续复习单词。
+              </div>
+            ) : null}
+
+            {stage === 'learn' ? (
+              <section className="grid gap-4 md:grid-cols-2">
+                {activeWords.map((item, index) => {
+                  const flipped = flippedCards.has(index)
+                  return (
+                    <button
+                      key={index}
+                      className="min-h-48 rounded-[30px] border border-blue-100 bg-white p-5 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5"
+                      type="button"
+                      onClick={() =>
+                        setFlippedCards((current) => {
+                          const next = new Set(current)
+                          if (next.has(index)) {
+                            next.delete(index)
+                          } else {
+                            next.add(index)
+                          }
+                          return next
+                        })
+                      }
+                    >
+                      {!flipped ? (
+                        <>
+                          <p className="text-5xl">{item.image || '⭐'}</p>
+                          <p className="mt-4 text-3xl font-black text-slate-950">{item.word}</p>
+                          <p className="mt-1 text-lg font-bold text-blue-600">{item.phonetic}</p>
+                          <span className="mt-4 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">点卡片看中文和例句</span>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-2xl font-black text-slate-950">{item.meaning}</p>
+                          <p className="mt-3 text-base font-semibold leading-7 text-slate-600">{item.example}</p>
+                          <span className="mt-4 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">再点一次翻回英文</span>
+                        </>
+                      )}
+                      <span
+                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          speakWord(item.word)
+                        }}
+                      >
+                        <Volume2 size={16} />
+                        朗读
+                      </span>
+                    </button>
+                  )
+                })}
+                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700 md:col-span-2" type="button" onClick={() => setStage('meaning')}>
+                  开始选意思
+                </button>
+              </section>
+            ) : null}
+
+            {stage === 'meaning' ? (
+              <section className="panel space-y-4">
+                {activeWords.map((item, index) => {
+                  const options = meaningOptions(activeWords, index)
+                  const selected = meaningAnswers[index]
+                  return (
+                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xl font-black text-slate-950">{item.word}</p>
+                        <button className="btn-secondary min-h-0 px-3 py-2" type="button" onClick={() => speakWord(item.word)}>
+                          <Volume2 size={15} />
+                        </button>
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {options.map((option) => (
+                          <button
+                            key={option}
+                            className={`rounded-2xl px-4 py-3 text-left text-sm font-black ${
+                              selected && option === item.meaning
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : selected === option
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-white text-slate-700'
+                            }`}
+                            type="button"
+                            onClick={() => setMeaningAnswers((current) => ({ ...current, [index]: option }))}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!meaningDone} onClick={() => setStage('order')}>
+                  进入字母归位
+                </button>
+              </section>
+            ) : null}
+
+            {stage === 'order' ? (
+              <section className="panel text-center">
+                <p className="text-sm font-black text-blue-600">第 {orderIndex + 1} / {activeWords.length} 个</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950">{activeWords[orderIndex]?.meaning}</h2>
+                <p className="mt-2 text-sm font-bold text-slate-500">点击字母，拼回完整单词</p>
+                <div className="mx-auto mt-5 min-h-16 max-w-xl rounded-3xl bg-blue-50 px-4 py-4 text-3xl font-black tracking-[0.2em] text-blue-800">
+                  {orderAnswer || ' '}
+                </div>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  {shuffleText(cleanLetters(activeWords[orderIndex]?.word ?? '')).map((letter, index) => (
+                    <button key={`${letter}-${index}`} className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-slate-950 shadow-sm" type="button" onClick={() => setOrderAnswer((current) => current + letter)}>
+                      {letter}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-5 flex justify-center gap-3">
+                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer('')}>
+                    清空
+                  </button>
+                  <button
+                    className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
+                    type="button"
+                    onClick={() => {
+                      const isCorrect = orderAnswer === cleanLetters(activeWords[orderIndex]?.word ?? '')
+                      if (!isCorrect) {
+                        setError(`正确答案是 ${activeWords[orderIndex]?.word}`)
+                        return
+                      }
+                      setError('')
+                      setOrderPassed((current) => new Set(current).add(orderIndex))
+                      setOrderAnswer('')
+                      if (orderIndex + 1 < activeWords.length) {
+                        setOrderIndex(orderIndex + 1)
+                      } else {
+                        setStage('sky')
+                      }
+                    }}
+                  >
+                    确认
+                  </button>
+                </div>
+                <p className="mt-4 text-sm font-bold text-slate-500">已完成 {orderPassed.size} / {activeWords.length}</p>
+              </section>
+            ) : null}
+
+            {stage === 'sky' ? (
+              <section className="panel space-y-4">
+                {activeWords.map((item, index) => {
+                  const letters = cleanLetters(item.word)
+                  const positions = missingPositions(item.word)
+                  const answer = skyAnswers[index] ?? ''
+                  const isPassed = skyPassed.has(index)
+                  return (
+                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
+                      <p className="text-sm font-bold text-slate-500">{item.meaning}</p>
+                      <p className="mt-2 text-2xl font-black tracking-[0.2em] text-slate-950">
+                        {letters.split('').map((letter, letterIndex) => (positions.includes(letterIndex) ? '_' : letter)).join(' ')}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSkyAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(0, positions.length) }))} placeholder={`填写 ${positions.length} 个字母`} />
+                        <button
+                          className="btn-secondary justify-center"
+                          type="button"
+                          onClick={() => {
+                            const expected = positions.map((position) => letters[position]).join('')
+                            if (answer === expected) {
+                              setSkyPassed((current) => new Set(current).add(index))
+                            } else {
+                              setError(`正确答案是 ${item.word}`)
+                            }
+                          }}
+                        >
+                          {isPassed ? <CheckCircle2 size={17} /> : null}
+                          检查
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!skyDone} onClick={() => setStage('spelling')}>
+                  进入单词拼写
+                </button>
+              </section>
+            ) : null}
+
+            {stage === 'spelling' ? (
+              <section className="panel space-y-4">
+                {activeWords.map((item, index) => {
+                  const answer = spellAnswers[index] ?? ''
+                  const isPassed = spellPassed.has(index)
+                  return (
+                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
+                      <p className="text-lg font-black text-slate-950">{item.meaning}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">{item.example.replace(new RegExp(escapeRegExp(item.word), 'ig'), '____')}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSpellAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '') }))} placeholder="拼写完整单词" />
+                        <button
+                          className="btn-secondary justify-center"
+                          type="button"
+                          onClick={() => {
+                            if (answer === cleanLetters(item.word)) {
+                              setSpellPassed((current) => new Set(current).add(index))
+                            } else {
+                              setError(`正确答案是 ${item.word}`)
+                            }
+                          }}
+                        >
+                          {isPassed ? <CheckCircle2 size={17} /> : null}
+                          检查
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <button className="btn-primary bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!spellingDone || isSubmitting} onClick={handleComplete}>
+                  {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
+                </button>
+              </section>
+            ) : null}
+
+            {stage === 'done' ? (
+              <section className="rounded-[38px] border border-emerald-100 bg-emerald-50 p-8 text-center shadow-sm shadow-emerald-100">
+                <p className="text-5xl">🌟</p>
+                <h2 className="mt-4 text-3xl font-black text-emerald-900">闯关完成</h2>
+                <p className="mt-3 font-bold text-emerald-700">积分系统已记录英语闯关 2 颗星。</p>
+              </section>
+            ) : null}
+          </section>
+        )}
+      </div>
+    </main>
+  )
+}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, ArrowDown, Sparkles, Star, Trophy } from 'lucide-react'
+import { Activity, ArrowDown, BookOpen, Sparkles, Star, Trophy } from 'lucide-react'
 import AccountMenu from '@/components/AccountMenu'
 import GameCard from '@/components/GameCard'
 import { games } from '@/data/games'
@@ -96,6 +96,27 @@ export default function Home() {
             <Link className="btn-primary shrink-0 bg-amber-600 shadow-amber-200 hover:bg-amber-700" to="/points">
               <Star size={18} />
               进入积分系统
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[34px] border border-blue-100 bg-blue-50/85 p-4 shadow-sm shadow-blue-100/80 sm:p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-100">
+                <BookOpen size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">英语单词闯关</h2>
+                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-blue-900">
+                  学新词、选意思、字母归位、字母天空和单词拼写，完成管理员发布的每日任务后自动获得英语闯关星星。
+                </p>
+              </div>
+            </div>
+            <Link className="btn-primary shrink-0 bg-blue-600 shadow-blue-200 hover:bg-blue-700" to="/word-challenge">
+              <BookOpen size={18} />
+              进入单词闯关
             </Link>
           </div>
         </section>

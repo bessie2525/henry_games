@@ -60,3 +60,33 @@ ON student_point_records(student_user_id, record_date);
 
 CREATE INDEX IF NOT EXISTS idx_student_point_records_date
 ON student_point_records(record_date);
+
+CREATE TABLE IF NOT EXISTS word_challenge_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_date TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  words_json TEXT NOT NULL,
+  created_by_user_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_word_challenge_tasks_date
+ON word_challenge_tasks(task_date);
+
+CREATE TABLE IF NOT EXISTS word_challenge_completions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  student_user_id INTEGER NOT NULL,
+  student_username TEXT NOT NULL,
+  point_record_id INTEGER,
+  completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(task_id, student_user_id),
+  FOREIGN KEY(task_id) REFERENCES word_challenge_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY(student_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(point_record_id) REFERENCES student_point_records(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_word_challenge_completions_student
+ON word_challenge_completions(student_user_id, completed_at);

@@ -15,6 +15,7 @@ npm install --prefix server
 ./scripts/init-leaderboard-db.sh
 node scripts/migrate-account-db.mjs
 node scripts/migrate-student-points-db.mjs
+node scripts/migrate-word-challenge-db.mjs
 pm2 start server/leaderboard-api.cjs --name henry-games-api
 pm2 save
 ```
@@ -79,6 +80,7 @@ cd /var/www/henry_games
 npm install --prefix server
 node scripts/migrate-account-db.mjs
 node scripts/migrate-student-points-db.mjs
+node scripts/migrate-word-challenge-db.mjs
 pm2 restart henry-games-api
 npm run build
 ```
@@ -90,4 +92,6 @@ users
 challenge_leaderboard.user_id
 fixed_leaderboard.user_id
 student_point_records
+word_challenge_tasks
+word_challenge_completions
 ```

@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, LogIn, Pencil, Save, Settings, Sparkles, Star, UserPlus } from 'lucide-react'
+import { Activity, BookOpen, LogIn, Pencil, Save, Settings, Sparkles, Star, UserPlus } from 'lucide-react'
 import { createPointRecord, fetchPointRecords, fetchPointStudents, fetchPointSummary, updatePointRecord } from '@/api/points'
 import AuthModal from '@/components/AuthModal'
 import { pointCategories, pointCategoryMap } from '@/data/pointCategories'
@@ -266,6 +266,10 @@ export default function Points() {
               <Settings size={17} />
               账户设置
             </button>
+            <Link className="btn-secondary justify-center" to="/word-challenge">
+              <BookOpen size={17} />
+              英语单词闯关
+            </Link>
             <Link className="btn-secondary justify-center" to="/">
               <Activity size={17} />
               认知训练小游戏

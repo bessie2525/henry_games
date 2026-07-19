@@ -1,4 +1,4 @@
-export type PointCategoryId = 'math' | 'english' | 'reading' | 'writing' | 'housework' | 'other'
+export type PointCategoryId = 'math' | 'english' | 'english_challenge' | 'reading' | 'writing' | 'housework' | 'other'
 
 export type PointRecord = {
   id: number

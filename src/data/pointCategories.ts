@@ -21,6 +21,12 @@ export const pointCategories: PointCategory[] = [
     suggestedRange: '建议 0-3 颗星',
   },
   {
+    id: 'english_challenge',
+    name: '英语闯关',
+    description: '完成管理员发布的每日英语单词闯关任务，自动积 2 颗星。',
+    suggestedRange: '系统自动 2 颗星',
+  },
+  {
     id: 'reading',
     name: '读书',
     description: '每天读书 45 分钟，写一句读后感，积 1 颗星；每多读 30 分钟，多积 1 颗星。',
