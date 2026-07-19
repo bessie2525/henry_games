@@ -21,18 +21,28 @@ function categoryName(category: PointCategoryId) {
   return pointCategoryMap[category]?.name ?? category
 }
 
+function parseStars(value: string) {
+  if (!/^\d+$/.test(value)) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 100 ? parsed : null
+}
+
 export default function Points() {
   const { user, token, isLoading } = useAuth()
   const [students, setStudents] = useState<StudentOption[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<number | ''>('')
   const [recordDate, setRecordDate] = useState(todayString())
   const [category, setCategory] = useState<PointCategoryId>('math')
-  const [stars, setStars] = useState(1)
+  const [starsInput, setStarsInput] = useState('1')
   const [detail, setDetail] = useState('')
   const [note, setNote] = useState('')
   const [records, setRecords] = useState<PointRecord[]>([])
   const [summary, setSummary] = useState<PointSummary>(createEmptySummary)
   const [editingRecord, setEditingRecord] = useState<PointRecord | null>(null)
+  const [editingStarsInput, setEditingStarsInput] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -108,13 +118,19 @@ export default function Points() {
       return
     }
 
+    const parsedStars = parseStars(starsInput)
+    if (parsedStars === null) {
+      setError('星星数需要填写 0-100 的整数')
+      return
+    }
+
     try {
       setIsSubmitting(true)
       await createPointRecord(token, {
         studentUserId: isAdmin ? Number(selectedStudentId) : undefined,
         recordDate,
         category,
-        stars,
+        stars: parsedStars,
         detail,
         note,
       })
@@ -143,16 +159,23 @@ export default function Points() {
       return
     }
 
+    const parsedStars = parseStars(editingStarsInput)
+    if (parsedStars === null) {
+      setError('星星数需要填写 0-100 的整数')
+      return
+    }
+
     try {
       setIsSubmitting(true)
       await updatePointRecord(token, editingRecord.id, {
         category: editingRecord.category,
-        stars: editingRecord.stars,
+        stars: parsedStars,
         detail: editingRecord.detail,
         note: editingRecord.note,
       })
       setMessage('积分记录已更新')
       setEditingRecord(null)
+      setEditingStarsInput('')
       await refreshData()
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : '积分记录更新失败')
@@ -266,11 +289,11 @@ export default function Points() {
               <span className="text-sm font-bold text-slate-600">星星数</span>
               <input
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
-                min={0}
-                max={100}
-                type="number"
-                value={stars}
-                onChange={(event) => setStars(Number(event.target.value))}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                type="text"
+                value={starsInput}
+                onChange={(event) => setStarsInput(event.target.value.replace(/\D/g, '').slice(0, 3))}
               />
             </label>
 
@@ -379,7 +402,14 @@ export default function Points() {
                           {record.note ? <p className="mt-1 text-sm font-semibold text-slate-600">备注：{record.note}</p> : null}
                         </div>
                         {isAdmin ? (
-                          <button className="btn-secondary min-h-0 px-3 py-2 text-xs" type="button" onClick={() => setEditingRecord(record)}>
+                          <button
+                            className="btn-secondary min-h-0 px-3 py-2 text-xs"
+                            type="button"
+                            onClick={() => {
+                              setEditingRecord(record)
+                              setEditingStarsInput(String(record.stars))
+                            }}
+                          >
                             <Pencil size={14} />
                             编辑
                           </button>
@@ -419,11 +449,11 @@ export default function Points() {
               <span className="text-sm font-bold text-slate-600">星星数</span>
               <input
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
-                type="number"
-                min={0}
-                max={100}
-                value={editingRecord.stars}
-                onChange={(event) => setEditingRecord({ ...editingRecord, stars: Number(event.target.value) })}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                type="text"
+                value={editingStarsInput}
+                onChange={(event) => setEditingStarsInput(event.target.value.replace(/\D/g, '').slice(0, 3))}
               />
             </label>
 
@@ -450,7 +480,14 @@ export default function Points() {
                 <Save size={18} />
                 保存
               </button>
-              <button className="btn-secondary flex-1 justify-center" type="button" onClick={() => setEditingRecord(null)}>
+              <button
+                className="btn-secondary flex-1 justify-center"
+                type="button"
+                onClick={() => {
+                  setEditingRecord(null)
+                  setEditingStarsInput('')
+                }}
+              >
                 取消
               </button>
             </div>
