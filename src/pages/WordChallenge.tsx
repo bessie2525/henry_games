@@ -151,7 +151,23 @@ async function playWordAudio(word: string) {
   const audio = new Audio(wordAudioUrl(word))
   audio.preload = 'auto'
   audio.volume = 1
-  await audio.play()
+
+  await new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(resolve, 3000)
+    audio.onended = () => {
+      window.clearTimeout(timeoutId)
+      resolve()
+    }
+    audio.onerror = () => {
+      window.clearTimeout(timeoutId)
+      reject(new Error('Audio playback failed'))
+    }
+
+    audio.play().catch((error: unknown) => {
+      window.clearTimeout(timeoutId)
+      reject(error)
+    })
+  })
 }
 
 async function speakWord(word: string, onError?: (message: string) => void) {
@@ -187,21 +203,29 @@ async function speakWord(word: string, onError?: (message: string) => void) {
     hasStarted = true
   }
 
-  utterance.onerror = () => {
-    onError?.('朗读没有成功播放。请确认手机未静音，并检查 Android 是否启用了系统文字转语音服务。')
-  }
-
   try {
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.resume()
-    window.speechSynthesis.speak(utterance)
-    window.speechSynthesis.resume()
-
-    window.setTimeout(() => {
-      if (!hasStarted && !window.speechSynthesis.speaking) {
-        onError?.('朗读没有启动。请在 Android 系统设置中启用“文字转语音输出”后，再点一次朗读。')
+    await new Promise<void>((resolve) => {
+      const timeoutId = window.setTimeout(() => {
+        if (!hasStarted && !window.speechSynthesis.speaking) {
+          onError?.('朗读没有启动。请在 Android 系统设置中启用“文字转语音输出”后，再点一次朗读。')
+        }
+        resolve()
+      }, 1800)
+      utterance.onend = () => {
+        window.clearTimeout(timeoutId)
+        resolve()
       }
-    }, 1200)
+      utterance.onerror = () => {
+        window.clearTimeout(timeoutId)
+        onError?.('朗读没有成功播放。请确认手机未静音，并检查 Android 是否启用了系统文字转语音服务。')
+        resolve()
+      }
+
+      window.speechSynthesis.cancel()
+      window.speechSynthesis.resume()
+      window.speechSynthesis.speak(utterance)
+      window.speechSynthesis.resume()
+    })
   } catch {
     onError?.('朗读没有成功播放。请确认手机浏览器允许网页播放声音。')
   }
@@ -244,6 +268,7 @@ export default function WordChallenge() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAutoReading, setIsAutoReading] = useState(false)
   const isAdmin = user?.role === 'admin'
 
   const selectedTask = useMemo(
@@ -309,6 +334,7 @@ export default function WordChallenge() {
     setSentencePassed(new Set())
     setMessage('')
     setError('')
+    setIsAutoReading(false)
   }
 
   useEffect(() => {
@@ -399,11 +425,17 @@ export default function WordChallenge() {
   const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
   const isSentenceHintVisible = visibleSentenceHints.has(sentenceIndex)
   const isTaskCompleted = Boolean(selectedTask?.isCompleted || stage === 'done')
+  const learnDone = learnWords.length > 0 && learnWords.every((_, index) => heardWords.has(index) && flippedCards.has(index))
+  const meaningDone = meaningWords.length > 0 && meaningWords.every((_, index) => Boolean(meaningAnswers[index]))
+  const skyDone = skyWords.length > 0 && skyPassed.size === skyWords.length
+  const orderDone = orderWords.length > 0 && orderPassed.size === orderWords.length
+  const allStagesDone = learnDone && meaningDone && skyDone && orderDone && sentenceDone
+  const canClaimReward = !isTaskCompleted && allStagesDone
   const stageCompletions: Record<Stage, boolean> = {
-    learn: isTaskCompleted || (learnWords.length > 0 && learnWords.every((_, index) => heardWords.has(index) && flippedCards.has(index))),
-    meaning: isTaskCompleted || (meaningWords.length > 0 && meaningWords.every((_, index) => Boolean(meaningAnswers[index]))),
-    sky: isTaskCompleted || (skyWords.length > 0 && skyPassed.size === skyWords.length),
-    order: isTaskCompleted || (orderWords.length > 0 && orderPassed.size === orderWords.length),
+    learn: isTaskCompleted || learnDone,
+    meaning: isTaskCompleted || meaningDone,
+    sky: isTaskCompleted || skyDone,
+    order: isTaskCompleted || orderDone,
     sentence: isTaskCompleted || sentenceDone,
     done: isTaskCompleted,
   }
@@ -606,6 +638,11 @@ export default function WordChallenge() {
                   )
                 })}
               </div>
+              {canClaimReward ? (
+                <button className="btn-primary mt-5 w-full bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700 sm:w-auto" type="button" disabled={isSubmitting} onClick={handleComplete}>
+                  {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
+                </button>
+              ) : null}
             </div>
 
             {selectedTask.isCompleted ? (
@@ -778,6 +815,7 @@ export default function WordChallenge() {
                       key={`${letter}-${index}`}
                       className="grid h-10 w-10 place-items-center rounded-xl bg-white text-lg font-black text-slate-950 shadow-sm sm:h-12 sm:w-12 sm:rounded-2xl sm:text-xl"
                       type="button"
+                      disabled={isAutoReading}
                       onClick={() => {
                         setError('')
                         setOrderFeedback('')
@@ -796,7 +834,7 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderAnswer((current) => current.slice(0, -1))
                     }}
-                    disabled={!orderAnswer}
+                    disabled={!orderAnswer || isAutoReading}
                   >
                     退格
                   </button>
@@ -807,14 +845,15 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderAnswer('')
                     }}
-                    disabled={!orderAnswer}
+                    disabled={!orderAnswer || isAutoReading}
                   >
                     清空
                   </button>
                   <button
                     className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                     type="button"
-                    onClick={() => {
+                    disabled={isAutoReading}
+                    onClick={async () => {
                       const isCorrect = orderAnswer === cleanLetters(orderWord?.word ?? '')
                       if (!isCorrect) {
                         setOrderFeedback(`正确答案是 ${orderWord?.word}，请重新拼一次`)
@@ -825,14 +864,20 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderPassed((current) => new Set(current).add(orderIndex))
                       setOrderAnswer('')
-                      if (orderIndex + 1 < orderWords.length) {
-                        setOrderIndex(orderIndex + 1)
-                      } else {
-                        setStage('sentence')
+                      setIsAutoReading(true)
+                      try {
+                        await speakWord(orderWord?.word ?? '', setError)
+                      } finally {
+                        setIsAutoReading(false)
+                        if (orderIndex + 1 < orderWords.length) {
+                          setOrderIndex(orderIndex + 1)
+                        } else {
+                          setStage('sentence')
+                        }
                       }
                     }}
                   >
-                    确认
+                    {isAutoReading ? '朗读中...' : '确认'}
                   </button>
                 </div>
                 <p className="mt-4 text-sm font-bold text-slate-500">已完成 {orderPassed.size} / {orderWords.length}</p>
@@ -863,6 +908,7 @@ export default function WordChallenge() {
                               key={`${letter}-${letterIndex}`}
                               aria-label={`填写第 ${letterIndex + 1} 个字母`}
                               className={skyInputClass}
+                              disabled={isAutoReading}
                               maxLength={1}
                               value={skyAnswer[missingIndex]?.trim() ?? ''}
                               onChange={(event) => {
@@ -892,14 +938,15 @@ export default function WordChallenge() {
                           setSkyFeedback('')
                           setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
                         }}
-                        disabled={!skyAnswer}
+                        disabled={!skyAnswer || isAutoReading}
                       >
                         清空
                       </button>
                       <button
                         className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                         type="button"
-                        onClick={() => {
+                        disabled={isAutoReading}
+                        onClick={async () => {
                           const expected = skyMissingPositions.map((position) => skyLetters[position]).join('')
                           if (skyAnswer !== expected) {
                             setSkyFeedback(`正确答案是 ${skyWord.word}，请重新填一次`)
@@ -911,14 +958,20 @@ export default function WordChallenge() {
                           setSkyFeedback('')
                           setSkyPassed((current) => new Set(current).add(skyIndex))
                           setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
-                          if (skyIndex + 1 < skyWords.length) {
-                            setSkyIndex(skyIndex + 1)
-                          } else {
-                            setStage('order')
+                          setIsAutoReading(true)
+                          try {
+                            await speakWord(skyWord.word, setError)
+                          } finally {
+                            setIsAutoReading(false)
+                            if (skyIndex + 1 < skyWords.length) {
+                              setSkyIndex(skyIndex + 1)
+                            } else {
+                              setStage('order')
+                            }
                           }
                         }}
                       >
-                        {skyIndex + 1 < skyWords.length ? '确认，进入下一个' : '进入字母归位'}
+                        {isAutoReading ? '朗读中...' : skyIndex + 1 < skyWords.length ? '确认，进入下一个' : '进入字母归位'}
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {skyWords.length}</p>
@@ -1008,9 +1061,6 @@ export default function WordChallenge() {
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {sentencePassed.size} / {sentenceWords.length}</p>
-                    <button className="btn-primary mt-5 bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!sentenceDone || isSubmitting} onClick={handleComplete}>
-                      {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
-                    </button>
                   </div>
                 ) : null}
               </section>
