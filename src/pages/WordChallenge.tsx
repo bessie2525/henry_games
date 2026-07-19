@@ -407,6 +407,7 @@ export default function WordChallenge() {
   const skyLetters = cleanLetters(skyWord?.word ?? '')
   const skyMissingPositions = missingPositions(skyWord?.word ?? '')
   const skyAnswer = skyAnswers[skyIndex] ?? ''
+  const isSkyPassed = skyPassed.has(skyIndex)
   const isLongSkyWord = skyLetters.length >= 9
   const isVeryLongSkyWord = skyLetters.length >= 12
   const skyLetterGapClass = isVeryLongSkyWord ? 'gap-1 sm:gap-2' : isLongSkyWord ? 'gap-1.5 sm:gap-2' : 'gap-1.5 sm:gap-2'
@@ -421,6 +422,7 @@ export default function WordChallenge() {
       ? 'h-9 w-7 rounded-lg border-2 border-blue-200 bg-white text-center text-lg font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl'
       : 'h-10 w-8 rounded-xl border-2 border-blue-200 bg-white text-center text-xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl'
   const orderWord = orderWords[orderIndex]
+  const isOrderPassed = orderPassed.has(orderIndex)
   const sentenceWord = sentenceWords[sentenceIndex]
   const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
   const isSentenceHintVisible = visibleSentenceHints.has(sentenceIndex)
@@ -441,7 +443,7 @@ export default function WordChallenge() {
   }
 
   async function submitSkyAnswer(nextAnswer = skyAnswer) {
-    if (!skyWord || isAutoReading) {
+    if (!skyWord || isAutoReading || isSkyPassed) {
       return
     }
 
@@ -460,12 +462,47 @@ export default function WordChallenge() {
       await speakWord(skyWord.word, setError)
     } finally {
       setIsAutoReading(false)
-      setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
-      if (skyIndex + 1 < skyWords.length) {
-        setSkyIndex(skyIndex + 1)
-      } else {
-        setStage('order')
-      }
+    }
+  }
+
+  function continueFromSky() {
+    setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+    if (skyIndex + 1 < skyWords.length) {
+      setSkyIndex(skyIndex + 1)
+    } else {
+      setStage('order')
+    }
+  }
+
+  async function submitOrderAnswer(nextAnswer = orderAnswer) {
+    if (!orderWord || isAutoReading || isOrderPassed) {
+      return
+    }
+
+    const isCorrect = nextAnswer === cleanLetters(orderWord.word)
+    if (!isCorrect) {
+      setOrderFeedback(`正确答案是 ${orderWord.word}，请重新拼一次`)
+      setOrderAnswer('')
+      return
+    }
+
+    setError('')
+    setOrderFeedback('')
+    setOrderPassed((current) => new Set(current).add(orderIndex))
+    setIsAutoReading(true)
+    try {
+      await speakWord(orderWord.word, setError)
+    } finally {
+      setIsAutoReading(false)
+    }
+  }
+
+  function continueFromOrder() {
+    setOrderAnswer('')
+    if (orderIndex + 1 < orderWords.length) {
+      setOrderIndex(orderIndex + 1)
+    } else {
+      setStage('sentence')
     }
   }
 
@@ -844,11 +881,15 @@ export default function WordChallenge() {
                       key={`${letter}-${index}`}
                       className="grid h-10 w-10 place-items-center rounded-xl bg-white text-lg font-black text-slate-950 shadow-sm sm:h-12 sm:w-12 sm:rounded-2xl sm:text-xl"
                       type="button"
-                      disabled={isAutoReading}
+                      disabled={isAutoReading || isOrderPassed}
                       onClick={() => {
+                        const nextAnswer = orderAnswer + letter
                         setError('')
                         setOrderFeedback('')
-                        setOrderAnswer((current) => current + letter)
+                        setOrderAnswer(nextAnswer)
+                        if (nextAnswer.length === cleanLetters(orderWord?.word ?? '').length) {
+                          void submitOrderAnswer(nextAnswer)
+                        }
                       }}
                     >
                       {letter}
@@ -863,7 +904,7 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderAnswer((current) => current.slice(0, -1))
                     }}
-                    disabled={!orderAnswer || isAutoReading}
+                    disabled={!orderAnswer || isAutoReading || isOrderPassed}
                   >
                     退格
                   </button>
@@ -874,7 +915,7 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderAnswer('')
                     }}
-                    disabled={!orderAnswer || isAutoReading}
+                    disabled={!orderAnswer || isAutoReading || isOrderPassed}
                   >
                     清空
                   </button>
@@ -882,31 +923,21 @@ export default function WordChallenge() {
                     className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                     type="button"
                     disabled={isAutoReading}
-                    onClick={async () => {
-                      const isCorrect = orderAnswer === cleanLetters(orderWord?.word ?? '')
-                      if (!isCorrect) {
-                        setOrderFeedback(`正确答案是 ${orderWord?.word}，请重新拼一次`)
-                        setOrderAnswer('')
+                    onClick={() => {
+                      if (isOrderPassed) {
+                        continueFromOrder()
                         return
                       }
-                      setError('')
-                      setOrderFeedback('')
-                      setOrderPassed((current) => new Set(current).add(orderIndex))
-                      setOrderAnswer('')
-                      setIsAutoReading(true)
-                      try {
-                        await speakWord(orderWord?.word ?? '', setError)
-                      } finally {
-                        setIsAutoReading(false)
-                        if (orderIndex + 1 < orderWords.length) {
-                          setOrderIndex(orderIndex + 1)
-                        } else {
-                          setStage('sentence')
-                        }
-                      }
+                      void submitOrderAnswer()
                     }}
                   >
-                    {isAutoReading ? '朗读中...' : '确认'}
+                    {isAutoReading
+                      ? '朗读中...'
+                      : isOrderPassed
+                        ? orderIndex + 1 < orderWords.length
+                          ? '下一题'
+                          : '进入例句填空'
+                        : '确认'}
                   </button>
                 </div>
                 <p className="mt-4 text-sm font-bold text-slate-500">已完成 {orderPassed.size} / {orderWords.length}</p>
@@ -937,7 +968,7 @@ export default function WordChallenge() {
                               key={`${letter}-${letterIndex}`}
                               aria-label={`填写第 ${letterIndex + 1} 个字母`}
                               className={skyInputClass}
-                              disabled={isAutoReading}
+                              disabled={isAutoReading || isSkyPassed}
                               maxLength={1}
                               value={skyAnswer[missingIndex]?.trim() ?? ''}
                               onChange={(event) => {
@@ -971,7 +1002,7 @@ export default function WordChallenge() {
                           setSkyFeedback('')
                           setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
                         }}
-                        disabled={!skyAnswer || isAutoReading}
+                        disabled={!skyAnswer || isAutoReading || isSkyPassed}
                       >
                         清空
                       </button>
@@ -980,10 +1011,20 @@ export default function WordChallenge() {
                         type="button"
                         disabled={isAutoReading}
                         onClick={() => {
+                          if (isSkyPassed) {
+                            continueFromSky()
+                            return
+                          }
                           void submitSkyAnswer()
                         }}
                       >
-                        {isAutoReading ? '朗读中...' : skyIndex + 1 < skyWords.length ? '确认，进入下一个' : '进入字母归位'}
+                        {isAutoReading
+                          ? '朗读中...'
+                          : isSkyPassed
+                            ? skyIndex + 1 < skyWords.length
+                              ? '下一题'
+                              : '进入字母归位'
+                            : '确认'}
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {skyWords.length}</p>
