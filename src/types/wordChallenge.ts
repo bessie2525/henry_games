@@ -14,4 +14,11 @@ export type WordChallengeTask = {
   createdAt: string
   updatedAt: string
   isCompleted: boolean
+  completionCount: number
+  totalStudentCount: number
+  completions: {
+    studentUserId: number
+    studentUsername: string
+    completedAt: string
+  }[]
 }

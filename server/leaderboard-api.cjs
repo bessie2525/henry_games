@@ -107,7 +107,7 @@ function publicWordChallengeWords(value) {
   }))
 }
 
-function publicWordChallengeTask(row, completedTaskIds = new Set()) {
+function publicWordChallengeTask(row, completedTaskIds = new Set(), completionSummary = null) {
   return {
     id: row.id,
     taskDate: row.task_date,
@@ -117,6 +117,9 @@ function publicWordChallengeTask(row, completedTaskIds = new Set()) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     isCompleted: completedTaskIds.has(row.id),
+    completionCount: completionSummary?.completionCount ?? 0,
+    totalStudentCount: completionSummary?.totalStudentCount ?? 0,
+    completions: completionSummary?.completions ?? [],
   }
 }
 
@@ -711,7 +714,10 @@ app.get('/api/word-challenge/tasks', requireAuth, (req, res) => {
   const where = []
   const params = []
 
-  if (taskDate) {
+  if (req.user.role === 'student') {
+    where.push('task_date <= ?')
+    params.push(new Date().toISOString().slice(0, 10))
+  } else if (taskDate) {
     where.push('task_date = ?')
     params.push(taskDate)
   }
@@ -736,6 +742,7 @@ app.get('/api/word-challenge/tasks', requireAuth, (req, res) => {
     .all(...params)
 
   const completedTaskIds = new Set()
+  const completionSummaries = new Map()
   if (req.user.role === 'student' && tasks.length > 0) {
     const completionRows = db
       .prepare(
@@ -751,8 +758,43 @@ app.get('/api/word-challenge/tasks', requireAuth, (req, res) => {
       completedTaskIds.add(row.taskId)
     }
   }
+  if (req.user.role === 'admin' && tasks.length > 0) {
+    const taskIds = tasks.map((task) => task.id)
+    const placeholders = taskIds.map(() => '?').join(',')
+    const totalStudentCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'student'").get().count
+    const completionRows = db
+      .prepare(
+        `
+        SELECT
+          task_id AS taskId,
+          student_user_id AS studentUserId,
+          student_username AS studentUsername,
+          completed_at AS completedAt
+        FROM word_challenge_completions
+        WHERE task_id IN (${placeholders})
+        ORDER BY completed_at DESC, id DESC
+      `,
+      )
+      .all(...taskIds)
 
-  res.json({ tasks: tasks.map((task) => publicWordChallengeTask(task, completedTaskIds)) })
+    for (const taskId of taskIds) {
+      completionSummaries.set(taskId, { completionCount: 0, totalStudentCount, completions: [] })
+    }
+    for (const row of completionRows) {
+      const summary = completionSummaries.get(row.taskId)
+      if (!summary) {
+        continue
+      }
+      summary.completionCount += 1
+      summary.completions.push({
+        studentUserId: row.studentUserId,
+        studentUsername: row.studentUsername,
+        completedAt: row.completedAt,
+      })
+    }
+  }
+
+  res.json({ tasks: tasks.map((task) => publicWordChallengeTask(task, completedTaskIds, completionSummaries.get(task.id))) })
 })
 
 app.post('/api/word-challenge/tasks', requireAuth, requireAdmin, (req, res) => {

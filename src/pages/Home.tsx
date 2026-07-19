@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, ArrowDown, BookOpen, Sparkles, Star, Trophy } from 'lucide-react'
+import { Activity, ArrowDown, BookOpen, Sparkles, Star } from 'lucide-react'
 import AccountMenu from '@/components/AccountMenu'
 import GameCard from '@/components/GameCard'
 import { games } from '@/data/games'
@@ -18,8 +18,8 @@ export default function Home() {
               <Activity size={20} />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-600">Cognitive Lab</p>
-              <h1 className="text-xl font-black tracking-tight text-slate-950">认知训练小游戏</h1>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-600">Henry Learning</p>
+              <h1 className="text-xl font-black tracking-tight text-slate-950">学习中心</h1>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -31,26 +31,45 @@ export default function Home() {
           </div>
         </nav>
 
-        <section className="relative overflow-hidden rounded-[44px] px-6 py-14 md:px-10 md:py-20">
+        <section className="relative overflow-hidden rounded-[44px] px-6 py-10 md:px-10 md:py-14">
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(34,211,238,0.22),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(251,146,60,0.18),transparent_26%)]" />
           <div className="max-w-3xl">
-            <p className="eyebrow">1 到 3 分钟的注意力训练</p>
-            <h2 className="mt-4 text-5xl font-black leading-[0.95] tracking-tight text-slate-950 md:text-7xl">
-              把记忆力和反应力练成手感。
+            <p className="eyebrow">Choose A Module</p>
+            <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-6xl">
+              选择今天要进入的学习模块。
             </h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              小游戏覆盖数字记忆、序列复现、空间定位和视觉搜索。每个游戏都能选择起始难度，适合快速热身，也适合直接挑战高阶关卡。
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+              首页先分成三个入口：认知训练小游戏、英语单词闯关和学生积分系统。进入对应模块后再处理具体任务。
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a className="btn-primary" href="#games">
-                <Sparkles size={18} />
-                开始训练
-              </a>
-              <a className="btn-secondary" href="#scores">
-                <Trophy size={18} />
-                查看最佳
-              </a>
-            </div>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <a className="group rounded-[32px] border border-cyan-100 bg-white/90 p-5 shadow-sm shadow-cyan-100 transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl hover:shadow-cyan-100" href="#games">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-600 text-white shadow-lg shadow-cyan-100">
+                <Sparkles size={24} />
+              </div>
+              <h3 className="mt-4 text-2xl font-black text-slate-950">认知训练小游戏</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">数字记忆、序列复现、空间定位、视觉搜索等训练项目。</p>
+              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-cyan-700">
+                进入训练
+                <ArrowDown size={16} />
+              </span>
+            </a>
+            <Link className="group rounded-[32px] border border-blue-100 bg-white/90 p-5 shadow-sm shadow-blue-100 transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-100" to="/word-challenge">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-100">
+                <BookOpen size={24} />
+              </div>
+              <h3 className="mt-4 text-2xl font-black text-slate-950">单词闯关</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">查看每日单词任务，完成五个环节后领取英语闯关星星。</p>
+              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">进入单词闯关</span>
+            </Link>
+            <Link className="group rounded-[32px] border border-amber-100 bg-white/90 p-5 shadow-sm shadow-amber-100 transition hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-100" to="/points">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-100">
+                <Star size={24} />
+              </div>
+              <h3 className="mt-4 text-2xl font-black text-slate-950">积分系统</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">登记每日星星，查看每天和累计积分，管理员可编辑记录。</p>
+              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-700">进入积分系统</span>
+            </Link>
           </div>
         </section>
 
@@ -76,48 +95,6 @@ export default function Home() {
                 </p>
               </div>
             ))}
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-[34px] border border-amber-100 bg-amber-50/85 p-4 shadow-sm shadow-amber-100/80 sm:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-100">
-                <Star size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">学生积分系统</h2>
-                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-amber-900">
-                  每日登记数学、英语、读书、作文和家务星星，学生和管理员都可以单独查看积分明细与累计总数。
-                </p>
-              </div>
-            </div>
-            <Link className="btn-primary shrink-0 bg-amber-600 shadow-amber-200 hover:bg-amber-700" to="/points">
-              <Star size={18} />
-              进入积分系统
-            </Link>
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-[34px] border border-blue-100 bg-blue-50/85 p-4 shadow-sm shadow-blue-100/80 sm:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-100">
-                <BookOpen size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">英语单词闯关</h2>
-                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-blue-900">
-                  学新词、选意思、字母填空、字母归位和例句填空，完成管理员发布的每日任务后自动获得英语闯关星星。
-                </p>
-              </div>
-            </div>
-            <Link className="btn-primary shrink-0 bg-blue-600 shadow-blue-200 hover:bg-blue-700" to="/word-challenge">
-              <BookOpen size={18} />
-              进入单词闯关
-            </Link>
           </div>
         </section>
 

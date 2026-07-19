@@ -310,7 +310,7 @@ export default function WordChallenge() {
   const isAdmin = user?.role === 'admin'
 
   const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) ?? tasks[0] ?? null,
+    () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks],
   )
   const activeWords = selectedTask?.words ?? []
@@ -325,9 +325,15 @@ export default function WordChallenge() {
       return
     }
 
-    const response = await fetchWordChallengeTasks(token, isAdmin ? {} : { date: todayString() })
+    const response = await fetchWordChallengeTasks(token)
     setTasks(response.tasks)
-    setSelectedTaskId((current) => current ?? response.tasks[0]?.id ?? null)
+    setSelectedTaskId((current) => {
+      if (current && response.tasks.some((task) => task.id === current)) {
+        return current
+      }
+
+      return isAdmin ? response.tasks[0]?.id ?? null : null
+    })
   }, [isAdmin, token, user])
 
   useEffect(() => {
@@ -478,7 +484,7 @@ export default function WordChallenge() {
   const skyDone = skyWords.length > 0 && skyPassed.size === skyWords.length
   const orderDone = orderWords.length > 0 && orderPassed.size === orderWords.length
   const allStagesDone = learnDone && meaningDone && skyDone && orderDone && sentenceDone
-  const canClaimReward = !isTaskCompleted && allStagesDone
+  const canClaimReward = !isAdmin && !isTaskCompleted && allStagesDone
   const stageCompletions: Record<Stage, boolean> = {
     learn: isTaskCompleted || learnDone,
     meaning: isTaskCompleted || meaningDone,
@@ -697,31 +703,76 @@ export default function WordChallenge() {
           </section>
         ) : null}
 
-        {isAdmin && tasks.length > 0 ? (
+        {tasks.length > 0 ? (
           <section className="rounded-[30px] border border-white/80 bg-white/85 p-4 shadow-sm shadow-blue-100">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Tasks</p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Tasks</p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">{isAdmin ? '任务管理与完成情况' : '每日单词任务'}</h2>
+              </div>
+              <p className="text-xs font-bold text-slate-500">
+                {isAdmin ? '可编辑今天、历史和未来任务' : '只显示今天及以前的任务'}
+              </p>
+            </div>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {tasks.map((task) => (
-                <button
-                  key={task.id}
-                  className="rounded-3xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
-                  type="button"
-                  onClick={() => {
-                    setEditingTaskId(task.id)
-                    setTaskDate(task.taskDate)
-                    setTitle(task.title)
-                    setWords(task.words)
-                    setSelectedTaskId(task.id)
-                  }}
-                >
-                  <p className="text-sm font-black text-slate-950">{task.taskDate} · {task.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">共 {task.words.length} 个单词</p>
-                  <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700">
-                    <Pencil size={13} />
-                    编辑
-                  </span>
-                </button>
-              ))}
+              {tasks.map((task) => {
+                const isSelected = selectedTaskId === task.id
+                const isFutureTask = task.taskDate > todayString()
+                return (
+                  <button
+                    key={task.id}
+                    className={`rounded-3xl border p-4 text-left transition ${
+                      isSelected
+                        ? 'border-blue-300 bg-blue-50 shadow-sm shadow-blue-100'
+                        : 'border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50'
+                    }`}
+                    type="button"
+                    onClick={() => {
+                      if (isAdmin) {
+                        setEditingTaskId(task.id)
+                        setTaskDate(task.taskDate)
+                        setTitle(task.title)
+                        setWords(task.words)
+                      }
+                      setSelectedTaskId(task.id)
+                    }}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-black text-slate-950">{task.taskDate} · {task.title}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">共 {task.words.length} 个单词</p>
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-black ${
+                          task.isCompleted
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isFutureTask
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-white text-blue-700'
+                        }`}
+                      >
+                        {isAdmin ? (isFutureTask ? '未来任务' : '已发布') : task.isCompleted ? '已完成，可复习' : '未完成，去闯关'}
+                      </span>
+                    </div>
+                    {isAdmin ? (
+                      <div className="mt-3 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                        <p className="font-black text-blue-700">
+                          完成情况：{task.completionCount} / {task.totalStudentCount} 名学生
+                        </p>
+                        <p className="mt-1 line-clamp-2">
+                          {task.completions.length > 0
+                            ? task.completions.map((completion) => completion.studentUsername).join('、')
+                            : '暂无学生完成'}
+                        </p>
+                      </div>
+                    ) : null}
+                    <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700">
+                      {isAdmin ? <Pencil size={13} /> : <Star size={13} />}
+                      {isAdmin ? '编辑 / 预览' : task.isCompleted ? '进入复习' : '开始任务'}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </section>
         ) : null}
@@ -729,15 +780,25 @@ export default function WordChallenge() {
         {!selectedTask ? (
           <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
             <p className="text-5xl">📘</p>
-            <h2 className="mt-4 text-2xl font-black text-slate-950">{isAdmin ? '还没有单词任务' : '今天还没有单词任务'}</h2>
-            <p className="mt-3 font-semibold text-slate-500">{isAdmin ? `请先发布一个包含 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词的任务。` : '等待管理员发布后，这里会自动显示。'}</p>
+            <h2 className="mt-4 text-2xl font-black text-slate-950">
+              {tasks.length > 0 ? '请选择一个单词任务' : isAdmin ? '还没有单词任务' : '今天还没有单词任务'}
+            </h2>
+            <p className="mt-3 font-semibold text-slate-500">
+              {tasks.length > 0
+                ? isAdmin
+                  ? '点击任务可以编辑内容，也可以预览学生练习流程。'
+                  : '点击未完成任务开始闯关；已完成任务仍然可以进入复习。'
+                : isAdmin
+                  ? `请先发布一个包含 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词的任务。`
+                  : '等待管理员发布后，这里会自动显示今天及以前的任务。'}
+            </p>
           </section>
         ) : (
           <section className="space-y-4 sm:space-y-5">
             <div className="rounded-[28px] border border-blue-100 bg-white/90 p-4 shadow-sm shadow-blue-100 sm:rounded-[38px] sm:p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Today Task</p>
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Selected Task</p>
                   <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">{selectedTask.title}</h2>
                   <p className="mt-1 text-sm font-bold text-slate-500">{selectedTask.taskDate} · 完成后自动增加 2 颗英语闯关星星</p>
                 </div>
