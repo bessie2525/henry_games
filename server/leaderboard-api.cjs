@@ -849,6 +849,26 @@ app.patch('/api/word-challenge/tasks/:id', requireAuth, requireAdmin, (req, res)
   res.json({ ok: true, task: publicWordChallengeTask(task) })
 })
 
+app.delete('/api/word-challenge/tasks/:id', requireAuth, requireAdmin, (req, res) => {
+  const taskId = Number(req.params.id)
+
+  if (!Number.isInteger(taskId)) {
+    return res.status(400).json({ error: 'Invalid word challenge task' })
+  }
+
+  const deleteTask = db.transaction(() => {
+    db.prepare('DELETE FROM word_challenge_completions WHERE task_id = ?').run(taskId)
+    return db.prepare('DELETE FROM word_challenge_tasks WHERE id = ?').run(taskId)
+  })
+
+  const result = deleteTask()
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Word challenge task not found' })
+  }
+
+  res.json({ ok: true })
+})
+
 app.post('/api/word-challenge/tasks/:id/complete', requireAuth, (req, res) => {
   const taskId = Number(req.params.id)
 

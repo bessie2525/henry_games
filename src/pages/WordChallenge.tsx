@@ -4,6 +4,7 @@ import { ArrowLeft, LogIn, Pencil, Plus, RotateCcw, Save, Settings, Star, Trash2
 import {
   completeWordChallengeTask,
   createWordChallengeTask,
+  deleteWordChallengeTask,
   fetchWordChallengeTasks,
   updateWordChallengeTask,
 } from '@/api/wordChallenge'
@@ -449,6 +450,41 @@ export default function WordChallenge() {
     }
   }
 
+  const handleDeleteTask = async (task: WordChallengeTask) => {
+    if (!token) {
+      setError('请先登录')
+      return
+    }
+
+    const confirmed = window.confirm(`确定删除 ${task.taskDate} 的单词任务「${task.title}」吗？删除后学生端不会再看到这个任务。`)
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      setError('')
+      setMessage('')
+      await deleteWordChallengeTask(token, task.id)
+      if (editingTaskId === task.id) {
+        setEditingTaskId(null)
+        setTaskDate(todayString())
+        setTitle('每日英语单词闯关')
+        setWords(emptyWords())
+      }
+      if (selectedTaskId === task.id) {
+        setSelectedTaskId(null)
+        resetChallenge()
+      }
+      setMessage('单词任务已删除')
+      await loadTasks()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : '单词任务删除失败')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const sentenceDone = sentenceWords.length > 0 && sentencePassed.size === sentenceWords.length
   const learnWord = learnWords[learnIndex]
   const learnCanContinue = Boolean(learnWord && heardWords.has(learnIndex) && flippedCards.has(learnIndex))
@@ -725,23 +761,13 @@ export default function WordChallenge() {
                 const isSelected = selectedTaskId === task.id
                 const isFutureTask = task.taskDate > todayString()
                 return (
-                  <button
+                  <div
                     key={task.id}
                     className={`rounded-3xl border p-4 text-left transition ${
                       isSelected
                         ? 'border-blue-300 bg-blue-50 shadow-sm shadow-blue-100'
                         : 'border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50'
                     }`}
-                    type="button"
-                    onClick={() => {
-                      if (isAdmin) {
-                        setEditingTaskId(task.id)
-                        setTaskDate(task.taskDate)
-                        setTitle(task.title)
-                        setWords(task.words)
-                      }
-                      setSelectedTaskId(task.id)
-                    }}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
@@ -772,11 +798,38 @@ export default function WordChallenge() {
                         </p>
                       </div>
                     ) : null}
-                    <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700">
-                      {isAdmin ? <Pencil size={13} /> : <Star size={13} />}
-                      {isAdmin ? '编辑 / 预览' : task.isCompleted ? '进入复习' : '开始任务'}
-                    </span>
-                  </button>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700 transition hover:bg-blue-100"
+                        type="button"
+                        onClick={() => {
+                          if (isAdmin) {
+                            setEditingTaskId(task.id)
+                            setTaskDate(task.taskDate)
+                            setTitle(task.title)
+                            setWords(task.words)
+                          }
+                          setSelectedTaskId(task.id)
+                        }}
+                      >
+                        {isAdmin ? <Pencil size={13} /> : <Star size={13} />}
+                        {isAdmin ? '编辑 / 预览' : task.isCompleted ? '进入复习' : '开始任务'}
+                      </button>
+                      {isAdmin ? (
+                        <button
+                          className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => {
+                            void handleDeleteTask(task)
+                          }}
+                        >
+                          <Trash2 size={13} />
+                          删除任务
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 )
               })}
             </div>

@@ -66,6 +66,12 @@ export function updateWordChallengeTask(
   })
 }
 
+export function deleteWordChallengeTask(token: string, taskId: number) {
+  return requestJson<{ ok: true }>(`/word-challenge/tasks/${taskId}`, token, {
+    method: 'DELETE',
+  })
+}
+
 export function completeWordChallengeTask(token: string, taskId: number) {
   return requestJson<{ ok: true; alreadyCompleted: boolean; pointRecordId: number; awardedStars?: number }>(
     `/word-challenge/tasks/${taskId}/complete`,
