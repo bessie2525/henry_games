@@ -13,8 +13,9 @@ import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge
 
 type AuthMode = 'login' | 'register'
 type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
+type ChallengeStage = Exclude<Stage, 'done'>
 
-const stages: { id: Stage; name: string }[] = [
+const stages: { id: ChallengeStage; name: string }[] = [
   { id: 'learn', name: '学新词' },
   { id: 'meaning', name: '选意思' },
   { id: 'sky', name: '字母填空' },
@@ -33,6 +34,36 @@ function emptyWords(): WordChallengeWord[] {
     meaning: '',
     example: '',
   }))
+}
+
+function shuffleIndexes(length: number) {
+  const indexes = Array.from({ length }, (_, index) => index)
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = indexes[index]
+    indexes[index] = indexes[swapIndex]
+    indexes[swapIndex] = current
+  }
+
+  return indexes
+}
+
+function buildWordOrders(length: number): Record<ChallengeStage, number[]> {
+  return {
+    learn: shuffleIndexes(length),
+    meaning: shuffleIndexes(length),
+    sky: shuffleIndexes(length),
+    order: shuffleIndexes(length),
+    sentence: shuffleIndexes(length),
+  }
+}
+
+function wordsInOrder(words: WordChallengeWord[], order: number[]) {
+  if (order.length !== words.length) {
+    return words
+  }
+
+  return order.map((index) => words[index]).filter(Boolean)
 }
 
 function cleanLetters(word: string) {
@@ -128,6 +159,7 @@ export default function WordChallenge() {
   const [words, setWords] = useState<WordChallengeWord[]>(emptyWords)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [stage, setStage] = useState<Stage>('learn')
+  const [wordOrders, setWordOrders] = useState<Record<ChallengeStage, number[]>>(() => buildWordOrders(0))
   const [learnIndex, setLearnIndex] = useState(0)
   const [heardWords, setHeardWords] = useState<Set<number>>(new Set())
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
@@ -157,6 +189,11 @@ export default function WordChallenge() {
     [selectedTaskId, tasks],
   )
   const activeWords = selectedTask?.words ?? []
+  const learnWords = useMemo(() => wordsInOrder(activeWords, wordOrders.learn), [activeWords, wordOrders.learn])
+  const meaningWords = useMemo(() => wordsInOrder(activeWords, wordOrders.meaning), [activeWords, wordOrders.meaning])
+  const skyWords = useMemo(() => wordsInOrder(activeWords, wordOrders.sky), [activeWords, wordOrders.sky])
+  const orderWords = useMemo(() => wordsInOrder(activeWords, wordOrders.order), [activeWords, wordOrders.order])
+  const sentenceWords = useMemo(() => wordsInOrder(activeWords, wordOrders.sentence), [activeWords, wordOrders.sentence])
 
   const loadTasks = useCallback(async () => {
     if (!token || !user) {
@@ -174,6 +211,7 @@ export default function WordChallenge() {
 
   const resetChallenge = () => {
     setStage('learn')
+    setWordOrders(buildWordOrders(activeWords.length))
     setLearnIndex(0)
     setHeardWords(new Set())
     setFlippedCards(new Set())
@@ -257,25 +295,26 @@ export default function WordChallenge() {
     }
   }
 
-  const sentenceDone = activeWords.length > 0 && sentencePassed.size === activeWords.length
-  const learnWord = activeWords[learnIndex]
+  const sentenceDone = sentenceWords.length > 0 && sentencePassed.size === sentenceWords.length
+  const learnWord = learnWords[learnIndex]
   const learnCanContinue = Boolean(learnWord && heardWords.has(learnIndex) && flippedCards.has(learnIndex))
-  const meaningWord = activeWords[meaningIndex]
+  const meaningWord = meaningWords[meaningIndex]
   const selectedMeaning = meaningAnswers[meaningIndex]
   const meaningCanContinue = Boolean(meaningWord && meaningHeardWords.has(meaningIndex) && selectedMeaning)
-  const skyWord = activeWords[skyIndex]
+  const skyWord = skyWords[skyIndex]
   const skyLetters = cleanLetters(skyWord?.word ?? '')
   const skyMissingPositions = missingPositions(skyWord?.word ?? '')
   const skyAnswer = skyAnswers[skyIndex] ?? ''
-  const sentenceWord = activeWords[sentenceIndex]
+  const orderWord = orderWords[orderIndex]
+  const sentenceWord = sentenceWords[sentenceIndex]
   const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
   const isSentenceHintVisible = visibleSentenceHints.has(sentenceIndex)
   const isTaskCompleted = Boolean(selectedTask?.isCompleted || stage === 'done')
   const stageCompletions: Record<Stage, boolean> = {
-    learn: isTaskCompleted || (activeWords.length > 0 && activeWords.every((_, index) => heardWords.has(index) && flippedCards.has(index))),
-    meaning: isTaskCompleted || (activeWords.length > 0 && activeWords.every((_, index) => Boolean(meaningAnswers[index]))),
-    sky: isTaskCompleted || (activeWords.length > 0 && skyPassed.size === activeWords.length),
-    order: isTaskCompleted || (activeWords.length > 0 && orderPassed.size === activeWords.length),
+    learn: isTaskCompleted || (learnWords.length > 0 && learnWords.every((_, index) => heardWords.has(index) && flippedCards.has(index))),
+    meaning: isTaskCompleted || (meaningWords.length > 0 && meaningWords.every((_, index) => Boolean(meaningAnswers[index]))),
+    sky: isTaskCompleted || (skyWords.length > 0 && skyPassed.size === skyWords.length),
+    order: isTaskCompleted || (orderWords.length > 0 && orderPassed.size === orderWords.length),
     sentence: isTaskCompleted || sentenceDone,
     done: isTaskCompleted,
   }
@@ -490,7 +529,7 @@ export default function WordChallenge() {
               <section className="panel">
                 {learnWord ? (
                   <div className="mx-auto max-w-3xl text-center">
-                    <p className="text-sm font-black text-blue-600">第 {learnIndex + 1} / {activeWords.length} 个单词</p>
+                    <p className="text-sm font-black text-blue-600">第 {learnIndex + 1} / {learnWords.length} 个单词</p>
                     <button
                       className="mt-4 min-h-80 w-full rounded-[34px] border border-blue-100 bg-white p-6 text-left shadow-sm shadow-blue-100 transition hover:-translate-y-0.5"
                       type="button"
@@ -542,14 +581,14 @@ export default function WordChallenge() {
                         type="button"
                         disabled={!learnCanContinue}
                         onClick={() => {
-                          if (learnIndex + 1 < activeWords.length) {
+                          if (learnIndex + 1 < learnWords.length) {
                             setLearnIndex(learnIndex + 1)
                           } else {
                             setStage('meaning')
                           }
                         }}
                       >
-                        {learnIndex + 1 < activeWords.length ? '下一个单词' : '开始选意思'}
+                        {learnIndex + 1 < learnWords.length ? '下一个单词' : '开始选意思'}
                       </button>
                     </div>
                     <p className="mt-3 text-sm font-bold text-slate-500">
@@ -565,7 +604,7 @@ export default function WordChallenge() {
                 {meaningWord ? (
                   <div className="mx-auto max-w-3xl">
                     <div className="rounded-[34px] bg-blue-50/80 p-5 text-center">
-                      <p className="text-sm font-black text-blue-600">第 {meaningIndex + 1} / {activeWords.length} 题</p>
+                      <p className="text-sm font-black text-blue-600">第 {meaningIndex + 1} / {meaningWords.length} 题</p>
                       <p className="mt-3 text-5xl font-black text-slate-950">{meaningWord.word}</p>
                       <button
                         className="btn-secondary mx-auto mt-4 justify-center"
@@ -580,7 +619,7 @@ export default function WordChallenge() {
                       </button>
                     </div>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      {meaningOptions(activeWords, meaningIndex).map((option) => (
+                      {meaningOptions(meaningWords, meaningIndex).map((option) => (
                         <button
                           key={option}
                           className={`rounded-2xl px-5 py-4 text-left text-base font-black ${
@@ -610,14 +649,14 @@ export default function WordChallenge() {
                       type="button"
                       disabled={!meaningCanContinue}
                       onClick={() => {
-                        if (meaningIndex + 1 < activeWords.length) {
+                        if (meaningIndex + 1 < meaningWords.length) {
                           setMeaningIndex(meaningIndex + 1)
                         } else {
                           setStage('sky')
                         }
                       }}
                     >
-                      {meaningIndex + 1 < activeWords.length ? '下一题' : '进入字母填空'}
+                      {meaningIndex + 1 < meaningWords.length ? '下一题' : '进入字母填空'}
                     </button>
                     <p className="mt-3 text-center text-sm font-bold text-slate-500">
                       需要先朗读，并选择答案看到中文和例句，才能继续。
@@ -629,8 +668,8 @@ export default function WordChallenge() {
 
             {stage === 'order' ? (
               <section className="panel text-center">
-                <p className="text-sm font-black text-blue-600">第 {orderIndex + 1} / {activeWords.length} 个</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">{activeWords[orderIndex]?.meaning}</h2>
+                <p className="text-sm font-black text-blue-600">第 {orderIndex + 1} / {orderWords.length} 个</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950">{orderWord?.meaning}</h2>
                 <p className="mt-2 text-sm font-bold text-slate-500">点击字母，拼回完整单词</p>
                 <div className="mx-auto mt-5 min-h-16 max-w-xl rounded-3xl bg-blue-50 px-4 py-4 text-3xl font-black tracking-[0.2em] text-blue-800">
                   {orderAnswer || ' '}
@@ -641,7 +680,7 @@ export default function WordChallenge() {
                   </div>
                 ) : null}
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
-                  {remainingShuffledLetters(activeWords[orderIndex]?.word ?? '', orderAnswer).map((letter, index) => (
+                  {remainingShuffledLetters(orderWord?.word ?? '', orderAnswer).map((letter, index) => (
                     <button
                       key={`${letter}-${index}`}
                       className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-xl font-black text-slate-950 shadow-sm"
@@ -683,9 +722,9 @@ export default function WordChallenge() {
                     className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                     type="button"
                     onClick={() => {
-                      const isCorrect = orderAnswer === cleanLetters(activeWords[orderIndex]?.word ?? '')
+                      const isCorrect = orderAnswer === cleanLetters(orderWord?.word ?? '')
                       if (!isCorrect) {
-                        setOrderFeedback(`正确答案是 ${activeWords[orderIndex]?.word}，请重新拼一次`)
+                        setOrderFeedback(`正确答案是 ${orderWord?.word}，请重新拼一次`)
                         setOrderAnswer('')
                         return
                       }
@@ -693,7 +732,7 @@ export default function WordChallenge() {
                       setOrderFeedback('')
                       setOrderPassed((current) => new Set(current).add(orderIndex))
                       setOrderAnswer('')
-                      if (orderIndex + 1 < activeWords.length) {
+                      if (orderIndex + 1 < orderWords.length) {
                         setOrderIndex(orderIndex + 1)
                       } else {
                         setStage('sentence')
@@ -703,7 +742,7 @@ export default function WordChallenge() {
                     确认
                   </button>
                 </div>
-                <p className="mt-4 text-sm font-bold text-slate-500">已完成 {orderPassed.size} / {activeWords.length}</p>
+                <p className="mt-4 text-sm font-bold text-slate-500">已完成 {orderPassed.size} / {orderWords.length}</p>
               </section>
             ) : null}
 
@@ -711,7 +750,7 @@ export default function WordChallenge() {
               <section className="panel text-center">
                 {skyWord ? (
                   <div className="mx-auto max-w-3xl">
-                    <p className="text-sm font-black text-blue-600">第 {skyIndex + 1} / {activeWords.length} 个</p>
+                    <p className="text-sm font-black text-blue-600">第 {skyIndex + 1} / {skyWords.length} 个</p>
                     <h2 className="mt-2 text-2xl font-black text-slate-950">{skyWord.meaning}</h2>
                     <p className="mt-2 text-sm font-bold text-slate-500">把缺失的字母直接填回单词空格里</p>
                     <div className="mt-6 flex flex-wrap items-center justify-center gap-2 rounded-[34px] bg-blue-50 px-4 py-6">
@@ -777,17 +816,17 @@ export default function WordChallenge() {
                           setSkyFeedback('')
                           setSkyPassed((current) => new Set(current).add(skyIndex))
                           setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
-                          if (skyIndex + 1 < activeWords.length) {
+                          if (skyIndex + 1 < skyWords.length) {
                             setSkyIndex(skyIndex + 1)
                           } else {
                             setStage('order')
                           }
                         }}
                       >
-                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入字母归位'}
+                        {skyIndex + 1 < skyWords.length ? '确认，进入下一个' : '进入字母归位'}
                       </button>
                     </div>
-                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {activeWords.length}</p>
+                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {skyWords.length}</p>
                   </div>
                 ) : null}
               </section>
@@ -797,7 +836,7 @@ export default function WordChallenge() {
               <section className="panel text-center">
                 {sentenceWord ? (
                   <div className="mx-auto max-w-3xl">
-                    <p className="text-sm font-black text-blue-600">第 {sentenceIndex + 1} / {activeWords.length} 题</p>
+                    <p className="text-sm font-black text-blue-600">第 {sentenceIndex + 1} / {sentenceWords.length} 题</p>
                     <div className="mt-4 rounded-[34px] bg-blue-50/80 p-5 text-left">
                       <p className="text-sm font-black text-blue-700">根据例句，把挖掉的单词填回来</p>
                       <p className="mt-3 text-3xl font-black leading-10 text-slate-950">{blankExample(sentenceWord.example, sentenceWord.word)}</p>
@@ -865,15 +904,15 @@ export default function WordChallenge() {
                           setSentenceFeedback('')
                           setSentencePassed((current) => new Set(current).add(sentenceIndex))
                           setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
-                          if (sentenceIndex + 1 < activeWords.length) {
+                          if (sentenceIndex + 1 < sentenceWords.length) {
                             setSentenceIndex(sentenceIndex + 1)
                           }
                         }}
                       >
-                        {sentenceIndex + 1 < activeWords.length ? '确认，进入下一题' : '确认'}
+                        {sentenceIndex + 1 < sentenceWords.length ? '确认，进入下一题' : '确认'}
                       </button>
                     </div>
-                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {sentencePassed.size} / {activeWords.length}</p>
+                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {sentencePassed.size} / {sentenceWords.length}</p>
                     <button className="btn-primary mt-5 bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!sentenceDone || isSubmitting} onClick={handleComplete}>
                       {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
                     </button>
