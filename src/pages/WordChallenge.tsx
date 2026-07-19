@@ -381,6 +381,19 @@ export default function WordChallenge() {
   const skyLetters = cleanLetters(skyWord?.word ?? '')
   const skyMissingPositions = missingPositions(skyWord?.word ?? '')
   const skyAnswer = skyAnswers[skyIndex] ?? ''
+  const isLongSkyWord = skyLetters.length >= 9
+  const isVeryLongSkyWord = skyLetters.length >= 12
+  const skyLetterGapClass = isVeryLongSkyWord ? 'gap-1 sm:gap-2' : isLongSkyWord ? 'gap-1.5 sm:gap-2' : 'gap-1.5 sm:gap-2'
+  const skyLetterCellClass = isVeryLongSkyWord
+    ? 'grid h-8 min-w-6 place-items-center rounded-lg bg-white px-1 text-base font-black text-slate-950 shadow-sm sm:h-14 sm:min-w-12 sm:rounded-2xl sm:px-3 sm:text-3xl'
+    : isLongSkyWord
+      ? 'grid h-9 min-w-7 place-items-center rounded-lg bg-white px-1.5 text-lg font-black text-slate-950 shadow-sm sm:h-14 sm:min-w-12 sm:rounded-2xl sm:px-3 sm:text-3xl'
+      : 'grid h-10 min-w-8 place-items-center rounded-xl bg-white px-2 text-xl font-black text-slate-950 shadow-sm sm:h-14 sm:min-w-12 sm:rounded-2xl sm:px-3 sm:text-3xl'
+  const skyInputClass = isVeryLongSkyWord
+    ? 'h-8 w-6 rounded-lg border-2 border-blue-200 bg-white text-center text-base font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl'
+    : isLongSkyWord
+      ? 'h-9 w-7 rounded-lg border-2 border-blue-200 bg-white text-center text-lg font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl'
+      : 'h-10 w-8 rounded-xl border-2 border-blue-200 bg-white text-center text-xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl'
   const orderWord = orderWords[orderIndex]
   const sentenceWord = sentenceWords[sentenceIndex]
   const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
@@ -834,12 +847,12 @@ export default function WordChallenge() {
                     <h2 className="mt-2 text-xl font-black text-slate-950 sm:text-2xl">{skyWord.meaning}</h2>
                     <p className="mt-2 text-sm font-bold text-slate-500">把缺失的字母直接填回单词空格里</p>
                     <div className="mt-6 overflow-x-auto rounded-[28px] bg-blue-50 px-3 py-5 sm:rounded-[34px] sm:px-4 sm:py-6">
-                      <div className="inline-flex min-w-max flex-nowrap items-center justify-center gap-1.5 sm:gap-2">
+                      <div className={`inline-flex min-w-max flex-nowrap items-center justify-center ${skyLetterGapClass}`}>
                         {skyLetters.split('').map((letter, letterIndex) => {
                           const missingIndex = skyMissingPositions.indexOf(letterIndex)
                           if (missingIndex === -1) {
                             return (
-                              <span key={`${letter}-${letterIndex}`} className="grid h-10 min-w-8 place-items-center rounded-xl bg-white px-2 text-xl font-black text-slate-950 shadow-sm sm:h-14 sm:min-w-12 sm:rounded-2xl sm:px-3 sm:text-3xl">
+                              <span key={`${letter}-${letterIndex}`} className={skyLetterCellClass}>
                                 {letter}
                               </span>
                             )
@@ -849,7 +862,7 @@ export default function WordChallenge() {
                             <input
                               key={`${letter}-${letterIndex}`}
                               aria-label={`填写第 ${letterIndex + 1} 个字母`}
-                              className="h-10 w-8 rounded-xl border-2 border-blue-200 bg-white text-center text-xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:h-14 sm:w-12 sm:rounded-2xl sm:text-3xl"
+                              className={skyInputClass}
                               maxLength={1}
                               value={skyAnswer[missingIndex]?.trim() ?? ''}
                               onChange={(event) => {
