@@ -125,3 +125,21 @@ CREATE TABLE IF NOT EXISTS english_reading_completions (
 
 CREATE INDEX IF NOT EXISTS idx_english_reading_completions_student
 ON english_reading_completions(student_user_id, completed_at);
+
+CREATE TABLE IF NOT EXISTS english_reading_vocabulary_notebook (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_user_id INTEGER NOT NULL,
+  word TEXT NOT NULL,
+  phonetic TEXT NOT NULL DEFAULT '',
+  meaning TEXT NOT NULL DEFAULT '',
+  example TEXT NOT NULL DEFAULT '',
+  source TEXT NOT NULL DEFAULT '',
+  mastered_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(student_user_id, word),
+  FOREIGN KEY(student_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_english_reading_vocabulary_notebook_student
+ON english_reading_vocabulary_notebook(student_user_id, mastered_at, updated_at);

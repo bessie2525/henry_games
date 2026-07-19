@@ -363,6 +363,40 @@ async function lookupYoudaoWord(word) {
   }
 }
 
+function normalizeNotebookWordPayload(value) {
+  const word = normalizeDictionaryWord(value?.word)
+  const phonetic = normalizeText(value?.phonetic, 40)
+  const meaning = normalizeText(value?.meaning, 180)
+  const example = normalizeText(value?.example, 260)
+  const source = normalizeText(value?.source, 40)
+
+  if (!word || !/^[a-z][a-z'-]{0,39}$/.test(word) || !meaning) {
+    return null
+  }
+
+  return {
+    word,
+    phonetic,
+    meaning,
+    example,
+    source,
+  }
+}
+
+function publicNotebookWord(row) {
+  return {
+    id: row.id,
+    word: row.word,
+    phonetic: row.phonetic,
+    meaning: row.meaning,
+    example: row.example,
+    source: row.source,
+    masteredAt: row.mastered_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 function parseCsvLine(line) {
   const values = []
   let current = ''
@@ -1345,6 +1379,97 @@ app.get('/api/english-reading/dictionary', requireAuth, async (req, res) => {
   }
 
   res.json({ ok: true, word: dictionaryWord })
+})
+
+app.get('/api/english-reading/vocabulary-notebook', requireAuth, (req, res) => {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Student permission required' })
+  }
+
+  const includeMastered = req.query.includeMastered === 'true'
+  const rows = db
+    .prepare(
+      `
+      SELECT
+        id,
+        word,
+        phonetic,
+        meaning,
+        example,
+        source,
+        mastered_at,
+        created_at,
+        updated_at
+      FROM english_reading_vocabulary_notebook
+      WHERE student_user_id = ?
+        AND (? = 1 OR mastered_at IS NULL)
+      ORDER BY mastered_at IS NOT NULL ASC, updated_at DESC, id DESC
+    `,
+    )
+    .all(req.user.id, includeMastered ? 1 : 0)
+
+  res.json({ words: rows.map(publicNotebookWord) })
+})
+
+app.post('/api/english-reading/vocabulary-notebook', requireAuth, (req, res) => {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Student permission required' })
+  }
+
+  const word = normalizeNotebookWordPayload(req.body)
+  if (!word) {
+    return res.status(400).json({ error: 'Invalid vocabulary word' })
+  }
+
+  db.prepare(
+    `
+    INSERT INTO english_reading_vocabulary_notebook
+      (student_user_id, word, phonetic, meaning, example, source)
+    VALUES
+      (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(student_user_id, word) DO UPDATE SET
+      phonetic = excluded.phonetic,
+      meaning = excluded.meaning,
+      example = excluded.example,
+      source = excluded.source,
+      updated_at = CURRENT_TIMESTAMP
+  `,
+  ).run(req.user.id, word.word, word.phonetic, word.meaning, word.example, word.source)
+
+  const savedWord = db
+    .prepare('SELECT * FROM english_reading_vocabulary_notebook WHERE student_user_id = ? AND word = ?')
+    .get(req.user.id, word.word)
+
+  res.json({ ok: true, word: publicNotebookWord(savedWord) })
+})
+
+app.patch('/api/english-reading/vocabulary-notebook/:id/mastered', requireAuth, (req, res) => {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Student permission required' })
+  }
+
+  const wordId = Number(req.params.id)
+  if (!Number.isInteger(wordId)) {
+    return res.status(400).json({ error: 'Invalid vocabulary word' })
+  }
+
+  const mastered = req.body?.mastered !== false
+  const result = db
+    .prepare(
+      `
+      UPDATE english_reading_vocabulary_notebook
+      SET mastered_at = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND student_user_id = ?
+    `,
+    )
+    .run(mastered ? todayDateString() : null, wordId, req.user.id)
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Vocabulary word not found' })
+  }
+
+  const savedWord = db.prepare('SELECT * FROM english_reading_vocabulary_notebook WHERE id = ? AND student_user_id = ?').get(wordId, req.user.id)
+  res.json({ ok: true, word: publicNotebookWord(savedWord) })
 })
 
 app.get('/api/english-reading/tasks', requireAuth, (req, res) => {

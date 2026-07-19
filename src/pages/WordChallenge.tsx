@@ -649,18 +649,18 @@ export default function WordChallenge() {
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(59,130,246,0.2),transparent_30%),#eff6ff] px-4 py-6">
         <div className="mx-auto max-w-4xl space-y-6">
-          <nav className="flex items-center justify-between rounded-[30px] border border-blue-100 bg-white/85 p-4 shadow-sm shadow-blue-100">
+          <nav className="flex flex-col gap-2 rounded-[22px] border border-blue-100 bg-white/85 p-3 shadow-sm shadow-blue-100 sm:flex-row sm:items-center sm:justify-between sm:rounded-[30px] sm:p-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
-              <h1 className="text-xl font-black text-slate-950">英语单词闯关</h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600 sm:text-xs sm:tracking-[0.3em]">Word Challenge</p>
+              <h1 className="text-lg font-black text-slate-950 sm:text-xl">英语单词闯关</h1>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link className="btn-secondary justify-center" to="/">
-                <ArrowLeft size={17} />
+              <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+                <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
                 回到学习中心
               </Link>
-              <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')}>
-                <Settings size={17} />
+              <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode('login')}>
+                <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
                 帐户设置
               </button>
             </div>
@@ -685,19 +685,19 @@ export default function WordChallenge() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(59,130,246,0.2),transparent_30%),radial-gradient(circle_at_85%_8%,rgba(251,191,36,0.18),transparent_28%),#eff6ff] px-4 py-6 md:py-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <nav className="flex flex-col gap-3 rounded-[30px] border border-blue-100 bg-white/85 p-4 shadow-sm shadow-blue-100 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <nav className="flex flex-col gap-2 rounded-[22px] border border-blue-100 bg-white/85 p-3 shadow-sm shadow-blue-100 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-[30px] sm:p-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950">英语单词闯关</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-500">当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600 sm:text-xs sm:tracking-[0.3em]">Word Challenge</p>
+            <h1 className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl">英语单词闯关</h1>
+            <p className="mt-0.5 text-xs font-semibold text-slate-500 sm:mt-1 sm:text-sm">当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary justify-center" to="/">
-              <ArrowLeft size={17} />
+            <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+              <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               回到学习中心
             </Link>
-            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
-              <Settings size={17} />
+            <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode('account')}>
+              <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               帐户设置
             </button>
           </div>

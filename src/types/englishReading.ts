@@ -10,6 +10,14 @@ export type ReadingDictionaryResult = ReadingVocabularyWord & {
   source: 'task' | 'youdao'
 }
 
+export type ReadingNotebookWord = Omit<ReadingVocabularyWord, 'id'> & {
+  id: number
+  source: string
+  masteredAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export type ReadingQuestion = {
   id: string
   prompt: string

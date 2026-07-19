@@ -6,15 +6,19 @@ import {
   createEnglishReadingTask,
   deleteEnglishReadingTask,
   fetchEnglishReadingTasks,
+  fetchReadingNotebookWords,
   lookupEnglishReadingWord,
+  saveReadingNotebookWord,
+  updateReadingNotebookWordMastery,
   updateEnglishReadingTask,
   type EnglishReadingTaskPayload,
 } from '@/api/englishReading'
 import AuthModal from '@/components/AuthModal'
 import { useAuth } from '@/hooks/useAuth'
-import type { EnglishReadingTask, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
+import type { EnglishReadingTask, ReadingNotebookWord, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
 
 type AuthMode = 'login' | 'register' | 'account'
+type ReadingWordCard = Omit<ReadingVocabularyWord, 'id'> & { id?: string | number; source?: string }
 
 const notebookStorageKey = 'english-reading-vocabulary'
 const defaultVocabularyJson = JSON.stringify(
@@ -44,7 +48,7 @@ function todayString() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function loadNotebook() {
+function loadLocalNotebook() {
   try {
     const saved = localStorage.getItem(notebookStorageKey)
     if (!saved) {
@@ -56,10 +60,6 @@ function loadNotebook() {
   } catch {
     return []
   }
-}
-
-function saveNotebook(words: ReadingVocabularyWord[]) {
-  localStorage.setItem(notebookStorageKey, JSON.stringify(words))
 }
 
 function parseJsonArray<T>(value: string, label: string): T[] {
@@ -114,9 +114,11 @@ export default function EnglishReading() {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(isTaskPage ? routeTaskId : null)
   const [showOnlyIncompleteTasks, setShowOnlyIncompleteTasks] = useState(true)
   const [isLargeText, setIsLargeText] = useState(false)
-  const [selectedWord, setSelectedWord] = useState<ReadingVocabularyWord | null>(null)
+  const [selectedWord, setSelectedWord] = useState<ReadingWordCard | null>(null)
   const [selectedLookupWord, setSelectedLookupWord] = useState('')
-  const [notebookWords, setNotebookWords] = useState<ReadingVocabularyWord[]>(() => loadNotebook())
+  const [notebookWords, setNotebookWords] = useState<ReadingNotebookWord[]>([])
+  const [showNotebookPanel, setShowNotebookPanel] = useState(false)
+  const [showMasteredNotebookWords, setShowMasteredNotebookWords] = useState(false)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [taskDate, setTaskDate] = useState(todayString())
   const [title, setTitle] = useState('每日英语阅读小达人')
@@ -130,6 +132,7 @@ export default function EnglishReading() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLookingUpWord, setIsLookingUpWord] = useState(false)
+  const [isNotebookLoading, setIsNotebookLoading] = useState(false)
   const isAdmin = user?.role === 'admin'
 
   const selectedTask = useMemo(() => tasks.find((task) => task.id === selectedTaskId) ?? null, [selectedTaskId, tasks])
@@ -160,6 +163,21 @@ export default function EnglishReading() {
     })
   }, [isTaskPage, routeTaskId, token, user])
 
+  const loadNotebookWords = useCallback(async () => {
+    if (!token || user?.role !== 'student') {
+      setNotebookWords([])
+      return
+    }
+
+    try {
+      setIsNotebookLoading(true)
+      const response = await fetchReadingNotebookWords(token, showMasteredNotebookWords)
+      setNotebookWords(response.words)
+    } finally {
+      setIsNotebookLoading(false)
+    }
+  }, [showMasteredNotebookWords, token, user?.role])
+
   useEffect(() => {
     setSelectedTaskId(isTaskPage ? routeTaskId : null)
   }, [isTaskPage, routeTaskId])
@@ -167,6 +185,28 @@ export default function EnglishReading() {
   useEffect(() => {
     loadTasks().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '英语阅读任务加载失败'))
   }, [loadTasks])
+
+  useEffect(() => {
+    loadNotebookWords().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '生词本加载失败'))
+  }, [loadNotebookWords])
+
+  useEffect(() => {
+    if (!token || user?.role !== 'student') {
+      return
+    }
+
+    const localWords = loadLocalNotebook()
+    if (!localWords.length) {
+      return
+    }
+
+    Promise.all(localWords.map((word) => saveReadingNotebookWord(token, word)))
+      .then(() => {
+        localStorage.removeItem(notebookStorageKey)
+        return loadNotebookWords()
+      })
+      .catch((syncError) => setError(syncError instanceof Error ? syncError.message : '本地生词同步失败'))
+  }, [loadNotebookWords, token, user?.role])
 
   useEffect(() => {
     setAnswers({})
@@ -186,21 +226,25 @@ export default function EnglishReading() {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged)
   }, [])
 
-  function addNotebookWord(word: ReadingVocabularyWord) {
+  async function addNotebookWord(word: ReadingWordCard) {
+    if (!token || user?.role !== 'student') {
+      return
+    }
+
+    const response = await saveReadingNotebookWord(token, word)
     setNotebookWords((current) => {
-      if (current.some((item) => item.word.toLowerCase() === word.word.toLowerCase())) {
-        return current
+      const next = current.filter((item) => item.id !== response.word.id && item.word.toLowerCase() !== response.word.word.toLowerCase())
+      if (!showMasteredNotebookWords && response.word.masteredAt) {
+        return next
       }
 
-      const next = [...current, word]
-      saveNotebook(next)
-      return next
+      return [response.word, ...next]
     })
   }
 
   function handleWordClick(word: ReadingVocabularyWord) {
     setError('')
-    addNotebookWord(word)
+    addNotebookWord(word).catch((saveError) => setError(saveError instanceof Error ? saveError.message : '生词保存失败'))
     setSelectedWord(word)
     speakText(word.word, setError)
   }
@@ -336,6 +380,31 @@ export default function EnglishReading() {
     }
   }
 
+  async function handleNotebookMastery(word: ReadingNotebookWord, mastered: boolean) {
+    if (!token) {
+      setError('请先登录')
+      return
+    }
+
+    try {
+      setIsNotebookLoading(true)
+      const response = await updateReadingNotebookWordMastery(token, word.id, mastered)
+      setNotebookWords((current) => {
+        const next = current.filter((item) => item.id !== word.id)
+        if (!showMasteredNotebookWords && response.word.masteredAt) {
+          return next
+        }
+
+        return [response.word, ...next]
+      })
+      setMessage(mastered ? `已标记为熟练：${word.word}` : `已重新设为生词：${word.word}`)
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : '生词本更新失败')
+    } finally {
+      setIsNotebookLoading(false)
+    }
+  }
+
   function startEdit(task: EnglishReadingTask) {
     setEditingTaskId(task.id)
     setTaskDate(task.taskDate)
@@ -375,23 +444,31 @@ export default function EnglishReading() {
     })
   }
 
-  const notebookSection = (
+  const notebookSection = isAdmin ? null : (
     <section className="rounded-[34px] border border-amber-100 bg-white/90 p-5 shadow-sm shadow-amber-100">
-      <div className="flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500 text-white">
-          <Star size={20} />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500 text-white">
+            <Star size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Vocabulary</p>
+            <h3 className="text-xl font-black text-slate-950">生词本</h3>
+          </div>
         </div>
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Vocabulary</p>
-          <h3 className="text-xl font-black text-slate-950">生词本</h3>
-        </div>
+        <button className="btn-secondary px-4 py-2" type="button" onClick={() => setShowNotebookPanel(true)}>
+          进入生词本
+        </button>
       </div>
+      <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
+        当前显示：{showMasteredNotebookWords ? '全部单词' : '仅生词'}。已熟练的单词会记录标记日期。
+      </p>
       {notebookWords.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
-          {notebookWords.map((word) => (
+          {notebookWords.slice(0, 12).map((word) => (
             <button
-              key={`${word.word}-${word.meaning}`}
-              className="rounded-full bg-amber-50 px-3 py-2 text-sm font-black text-amber-800 ring-1 ring-amber-100"
+              key={word.id}
+              className={`rounded-full px-3 py-2 text-sm font-black ring-1 ${word.masteredAt ? 'bg-slate-50 text-slate-500 ring-slate-200' : 'bg-amber-50 text-amber-800 ring-amber-100'}`}
               type="button"
               onClick={() => {
                 setSelectedWord(word)
@@ -401,10 +478,11 @@ export default function EnglishReading() {
               {word.word}
             </button>
           ))}
+          {notebookWords.length > 12 ? <span className="rounded-full bg-white px-3 py-2 text-sm font-black text-amber-700 ring-1 ring-amber-100">+{notebookWords.length - 12}</span> : null}
         </div>
       ) : (
         <p className="mt-4 rounded-3xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
-          阅读时点击正文里点亮的单词，它们会自动收进这里，方便随时点读复习。
+          阅读时点击正文里点亮的单词，或查询选中单词后加入生词本，方便随时点读复习。
         </p>
       )}
     </section>
@@ -423,19 +501,19 @@ export default function EnglishReading() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.2),transparent_28%),radial-gradient(circle_at_85%_8%,rgba(20,184,166,0.16),transparent_30%),#fff7ed] px-4 py-6 md:py-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <nav className="flex flex-col gap-3 rounded-[30px] border border-orange-100 bg-white/85 p-4 shadow-sm shadow-orange-100 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <nav className="flex flex-col gap-2 rounded-[22px] border border-orange-100 bg-white/85 p-3 shadow-sm shadow-orange-100 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-[30px] sm:p-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">English Reading</p>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950">英语阅读小达人</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{user ? `当前账户：${user.username} · ${isAdmin ? '管理员' : '学生'}` : '请先登录后查看每日阅读任务'}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-600 sm:text-xs sm:tracking-[0.3em]">English Reading</p>
+            <h1 className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl">英语阅读小达人</h1>
+            <p className="mt-0.5 text-xs font-semibold text-slate-500 sm:mt-1 sm:text-sm">{user ? `当前账户：${user.username} · ${isAdmin ? '管理员' : '学生'}` : '请先登录后查看每日阅读任务'}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary justify-center" to="/">
-              <ArrowLeft size={17} />
+            <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+              <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               回到学习中心
             </Link>
-            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode(user ? 'account' : 'login')}>
-              <Settings size={17} />
+            <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode(user ? 'account' : 'login')}>
+              <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               帐户设置
             </button>
           </div>
@@ -765,7 +843,8 @@ export default function EnglishReading() {
               disabled={isSelectedWordSaved}
               onClick={() => {
                 addNotebookWord(selectedWord)
-                setMessage(`已加入生词本：${selectedWord.word}`)
+                  .then(() => setMessage(`已加入生词本：${selectedWord.word}`))
+                  .catch((saveError) => setError(saveError instanceof Error ? saveError.message : '生词保存失败'))
               }}
             >
               {isSelectedWordSaved ? '已加入生词本' : '加入生词本'}
@@ -774,6 +853,80 @@ export default function EnglishReading() {
               继续阅读
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {showNotebookPanel ? (
+        <div className="fixed inset-0 z-[880] grid place-items-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+          <section className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[34px] border border-amber-100 bg-white p-5 shadow-2xl shadow-slate-950/20 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Vocabulary Notebook</p>
+                <h2 className="mt-2 text-3xl font-black text-slate-950">生词本编辑</h2>
+                <p className="mt-2 text-sm font-bold text-slate-500">标记为“已熟练”后会记录当天日期，默认列表不再显示这个词。</p>
+              </div>
+              <button className="btn-secondary px-4 py-2" type="button" onClick={() => setShowNotebookPanel(false)}>
+                关闭
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-amber-50 px-4 py-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className={`rounded-full px-4 py-2 text-sm font-black ${!showMasteredNotebookWords ? 'bg-amber-600 text-white shadow-sm shadow-amber-200' : 'bg-white text-amber-800'}`}
+                  type="button"
+                  onClick={() => setShowMasteredNotebookWords(false)}
+                >
+                  仅显示生词
+                </button>
+                <button
+                  className={`rounded-full px-4 py-2 text-sm font-black ${showMasteredNotebookWords ? 'bg-amber-600 text-white shadow-sm shadow-amber-200' : 'bg-white text-amber-800'}`}
+                  type="button"
+                  onClick={() => setShowMasteredNotebookWords(true)}
+                >
+                  显示全部单词
+                </button>
+              </div>
+              <p className="text-sm font-black text-amber-800">{isNotebookLoading ? '加载中...' : `共 ${notebookWords.length} 个`}</p>
+            </div>
+
+            <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+              {notebookWords.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {notebookWords.map((word) => (
+                    <article key={word.id} className={`rounded-[26px] border p-4 ${word.masteredAt ? 'border-slate-200 bg-slate-50' : 'border-amber-100 bg-white'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-2xl font-black text-slate-950">{word.word}</h3>
+                          {word.phonetic ? <p className="mt-1 text-sm font-black text-orange-600">{word.phonetic}</p> : null}
+                        </div>
+                        <button className="btn-secondary px-3 py-2" type="button" onClick={() => speakText(word.word, setError)}>
+                          <Volume2 size={16} />
+                        </button>
+                      </div>
+                      <p className="mt-3 rounded-2xl bg-orange-50 px-3 py-2 text-sm font-black leading-6 text-orange-900">{word.meaning}</p>
+                      {word.example ? <p className="mt-3 text-sm font-bold leading-6 text-slate-600">{word.example}</p> : null}
+                      {word.masteredAt ? (
+                        <p className="mt-3 rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">已熟练：{word.masteredAt}</p>
+                      ) : null}
+                      <button
+                        className={`mt-4 w-full justify-center ${word.masteredAt ? 'btn-secondary' : 'btn-primary bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700'}`}
+                        type="button"
+                        disabled={isNotebookLoading}
+                        onClick={() => handleNotebookMastery(word, !word.masteredAt)}
+                      >
+                        {word.masteredAt ? '重新设为生词' : '标记为已熟练'}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-3xl bg-amber-50 px-4 py-6 text-center text-sm font-bold leading-6 text-amber-800">
+                  {showMasteredNotebookWords ? '生词本里还没有单词。' : '当前没有未熟练生词，可以切换到“显示全部单词”查看已熟练词汇。'}
+                </p>
+              )}
+            </div>
+          </section>
         </div>
       ) : null}
 

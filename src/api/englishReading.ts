@@ -1,4 +1,4 @@
-import type { EnglishReadingTask, ReadingDictionaryResult, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
+import type { EnglishReadingTask, ReadingDictionaryResult, ReadingNotebookWord, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -37,6 +37,24 @@ export function fetchEnglishReadingTasks(token: string) {
 
 export function lookupEnglishReadingWord(token: string, word: string) {
   return requestJson<{ ok: true; word: ReadingDictionaryResult }>(`/english-reading/dictionary?word=${encodeURIComponent(word)}`, token)
+}
+
+export function fetchReadingNotebookWords(token: string, includeMastered: boolean) {
+  return requestJson<{ words: ReadingNotebookWord[] }>(`/english-reading/vocabulary-notebook?includeMastered=${includeMastered ? 'true' : 'false'}`, token)
+}
+
+export function saveReadingNotebookWord(token: string, word: Omit<ReadingVocabularyWord, 'id'> & { id?: string | number; source?: string }) {
+  return requestJson<{ ok: true; word: ReadingNotebookWord }>('/english-reading/vocabulary-notebook', token, {
+    method: 'POST',
+    body: JSON.stringify(word),
+  })
+}
+
+export function updateReadingNotebookWordMastery(token: string, wordId: number, mastered: boolean) {
+  return requestJson<{ ok: true; word: ReadingNotebookWord }>(`/english-reading/vocabulary-notebook/${wordId}/mastered`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ mastered }),
+  })
 }
 
 export function createEnglishReadingTask(token: string, payload: EnglishReadingTaskPayload) {

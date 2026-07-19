@@ -202,23 +202,23 @@ export default function Points() {
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.3),transparent_30%),radial-gradient(circle_at_88%_4%,rgba(16,185,129,0.16),transparent_26%),#fff7ed] px-4 py-6 md:py-8">
         <div className="mx-auto max-w-5xl space-y-6">
-          <nav className="flex flex-col gap-3 rounded-[30px] border border-amber-100 bg-white/80 p-4 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-amber-500 text-white">
-                <Star size={20} />
+          <nav className="flex flex-col gap-2 rounded-[22px] border border-amber-100 bg-white/80 p-3 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-[30px] sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-white sm:h-11 sm:w-11">
+                <Star className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
-                <h1 className="text-xl font-black tracking-tight text-slate-950">学生积分系统</h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-600 sm:text-xs sm:tracking-[0.3em]">Student Points</p>
+                <h1 className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">学生积分系统</h1>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link className="btn-secondary justify-center" to="/">
-                <ArrowLeft size={17} />
+              <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+                <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
                 回到学习中心
               </Link>
-              <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')}>
-                <Settings size={17} />
+              <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode('login')}>
+                <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
                 帐户设置
               </button>
             </div>
@@ -254,26 +254,26 @@ export default function Points() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.28),transparent_30%),radial-gradient(circle_at_88%_4%,rgba(16,185,129,0.16),transparent_26%),#fff7ed] px-4 py-6 md:py-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <nav className="flex flex-col gap-3 rounded-[30px] border border-amber-100 bg-white/80 p-4 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-500 text-white">
-              <Star size={22} />
+        <nav className="flex flex-col gap-2 rounded-[22px] border border-amber-100 bg-white/80 p-3 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-[30px] sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-white sm:h-12 sm:w-12">
+              <Star className="h-4 w-4 sm:h-[22px] sm:w-[22px]" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950">学生积分系统</h1>
-              <p className="mt-1 text-sm font-semibold text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-600 sm:text-xs sm:tracking-[0.3em]">Student Points</p>
+              <h1 className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl">学生积分系统</h1>
+              <p className="mt-0.5 text-xs font-semibold text-slate-500 sm:mt-1 sm:text-sm">
                 当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary justify-center" to="/">
-              <ArrowLeft size={17} />
+            <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+              <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               回到学习中心
             </Link>
-            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
-              <Settings size={17} />
+            <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode('account')}>
+              <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               帐户设置
             </button>
           </div>

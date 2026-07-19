@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { BookOpen, LogIn, Settings, Star, UserPlus } from 'lucide-react'
+import { LogIn, Settings, UserPlus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import AuthModal from './AuthModal'
 
@@ -18,21 +17,11 @@ export default function AccountMenu() {
     <>
       <div className="flex flex-wrap gap-2">
         {user ? (
-          <>
-            <Link className="btn-primary" to="/points">
-              <Star size={17} />
-              积分系统
-            </Link>
-            <Link className="btn-secondary justify-center" to="/word-challenge">
-              <BookOpen size={17} />
-              单词闯关
-            </Link>
-            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
-              <Settings size={17} />
-              {user.username}
-              <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] text-cyan-700">{formatRole(user.role)}</span>
-            </button>
-          </>
+          <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
+            <Settings size={17} />
+            帐户设置 · {user.username}
+            <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] text-cyan-700">{formatRole(user.role)}</span>
+          </button>
         ) : (
           <>
             <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('login')} disabled={isLoading}>

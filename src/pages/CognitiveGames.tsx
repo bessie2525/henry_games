@@ -18,23 +18,23 @@ export default function CognitiveGames() {
   return (
     <main className="min-h-screen px-4 py-6 md:py-8">
       <div className="mx-auto max-w-6xl space-y-8">
-        <nav className="flex flex-col gap-4 rounded-[30px] border border-white/80 bg-white/75 p-4 shadow-sm shadow-slate-200/70 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-950 text-cyan-200">
-              <Activity size={20} />
+        <nav className="flex flex-col gap-2 rounded-[22px] border border-white/80 bg-white/75 p-3 shadow-sm shadow-slate-200/70 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:rounded-[30px] sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-950 text-cyan-200 sm:h-11 sm:w-11">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-600">Cognitive Lab</p>
-              <h1 className="text-xl font-black tracking-tight text-slate-950">认知训练小游戏</h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-600 sm:text-xs sm:tracking-[0.3em]">Cognitive Lab</p>
+              <h1 className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">认知训练小游戏</h1>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary justify-center" to="/">
-              <ArrowLeft size={17} />
+            <Link className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" to="/">
+              <ArrowLeft className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               回到学习中心
             </Link>
-            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode(user ? 'account' : 'login')}>
-              <Settings size={17} />
+            <button className="btn-secondary min-h-9 justify-center px-3 py-2 text-xs sm:min-h-11 sm:px-5 sm:py-3 sm:text-sm" type="button" onClick={() => setAuthMode(user ? 'account' : 'login')}>
+              <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
               帐户设置
             </button>
           </div>
