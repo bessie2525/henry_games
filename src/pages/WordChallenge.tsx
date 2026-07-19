@@ -126,6 +126,7 @@ export default function WordChallenge() {
   const [meaningAnswers, setMeaningAnswers] = useState<Record<number, string>>({})
   const [orderIndex, setOrderIndex] = useState(0)
   const [orderAnswer, setOrderAnswer] = useState('')
+  const [orderFeedback, setOrderFeedback] = useState('')
   const [orderPassed, setOrderPassed] = useState<Set<number>>(new Set())
   const [skyAnswers, setSkyAnswers] = useState<Record<number, string>>({})
   const [skyPassed, setSkyPassed] = useState<Set<number>>(new Set())
@@ -168,6 +169,7 @@ export default function WordChallenge() {
     setMeaningAnswers({})
     setOrderIndex(0)
     setOrderAnswer('')
+    setOrderFeedback('')
     setOrderPassed(new Set())
     setSkyAnswers({})
     setSkyPassed(new Set())
@@ -595,6 +597,11 @@ export default function WordChallenge() {
                 <div className="mx-auto mt-5 min-h-16 max-w-xl rounded-3xl bg-blue-50 px-4 py-4 text-3xl font-black tracking-[0.2em] text-blue-800">
                   {orderAnswer || ' '}
                 </div>
+                {orderFeedback ? (
+                  <div className="mx-auto mt-3 max-w-xl rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700">
+                    {orderFeedback}
+                  </div>
+                ) : null}
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {remainingShuffledLetters(activeWords[orderIndex]?.word ?? '', orderAnswer).map((letter, index) => (
                     <button
@@ -603,6 +610,7 @@ export default function WordChallenge() {
                       type="button"
                       onClick={() => {
                         setError('')
+                        setOrderFeedback('')
                         setOrderAnswer((current) => current + letter)
                       }}
                     >
@@ -611,10 +619,26 @@ export default function WordChallenge() {
                   ))}
                 </div>
                 <div className="mt-5 flex justify-center gap-3">
-                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer((current) => current.slice(0, -1))} disabled={!orderAnswer}>
+                  <button
+                    className="btn-secondary justify-center"
+                    type="button"
+                    onClick={() => {
+                      setOrderFeedback('')
+                      setOrderAnswer((current) => current.slice(0, -1))
+                    }}
+                    disabled={!orderAnswer}
+                  >
                     退格
                   </button>
-                  <button className="btn-secondary justify-center" type="button" onClick={() => setOrderAnswer('')} disabled={!orderAnswer}>
+                  <button
+                    className="btn-secondary justify-center"
+                    type="button"
+                    onClick={() => {
+                      setOrderFeedback('')
+                      setOrderAnswer('')
+                    }}
+                    disabled={!orderAnswer}
+                  >
                     清空
                   </button>
                   <button
@@ -623,11 +647,12 @@ export default function WordChallenge() {
                     onClick={() => {
                       const isCorrect = orderAnswer === cleanLetters(activeWords[orderIndex]?.word ?? '')
                       if (!isCorrect) {
-                        setError(`正确答案是 ${activeWords[orderIndex]?.word}`)
+                        setOrderFeedback(`正确答案是 ${activeWords[orderIndex]?.word}，请重新拼一次`)
                         setOrderAnswer('')
                         return
                       }
                       setError('')
+                      setOrderFeedback('')
                       setOrderPassed((current) => new Set(current).add(orderIndex))
                       setOrderAnswer('')
                       if (orderIndex + 1 < activeWords.length) {
