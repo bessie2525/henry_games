@@ -1,0 +1,296 @@
+src/pages/WordChallenge.tsx
+  s_7cbabd6e8b49b0::t_4151e7a3062ffe 3,14,580-589,619-620,622-625 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9a9ce203c93669e20acc","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":3},{"Single":14},{"Range":[580,589]},{"Range":[619,620]},{"Range":[622,625]}]}]}
+  s_7cbabd6e8b49b0::t_a825d2ab431e95 1272 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9ab7e203c93669e20aec","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":1272}]}]}
+src/pages/Points.tsx
+  s_7cbabd6e8b49b0::t_0069f38516b5fc 3,215-224,271-274,277 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9acce203c93669e20b0c","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":3},{"Range":[215,224]},{"Range":[271,274]},{"Single":277}]}]}
+src/pages/CognitiveGames.tsx
+  s_7cbabd6e8b49b0::t_59fee060a012a8 1,3-4,7,11-12,14,16,34,36-39,96 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c9a84e203c93669e20aac","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":1},{"Range":[3,4]},{"Single":7},{"Range":[11,12]},{"Single":14},{"Single":16},{"Single":34},{"Range":[36,39]},{"Single":96}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "81ac11554aa62ae9ace0750d6d06bea397c22be7",
+  "prompts": {},
+  "humans": {
+    "h_1c39b08af7a710": {
+      "author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_7cbabd6e8b49b0": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a538a3cd0eb1e94f07fcd6d",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "attestation_metadata": {
+    "src/pages/CognitiveGames.tsx": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_59fee060a012a8",
+        "line_ranges": [
+          {
+            "Single": 1
+          },
+          {
+            "Range": [
+              3,
+              4
+            ]
+          },
+          {
+            "Single": 7
+          },
+          {
+            "Range": [
+              11,
+              12
+            ]
+          },
+          {
+            "Single": 14
+          },
+          {
+            "Single": 16
+          },
+          {
+            "Single": 34
+          },
+          {
+            "Range": [
+              36,
+              39
+            ]
+          },
+          {
+            "Single": 96
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9a84e203c93669e20aac",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 1
+              },
+              {
+                "Range": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "Single": 7
+              },
+              {
+                "Range": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "Single": 14
+              },
+              {
+                "Single": 16
+              },
+              {
+                "Single": 34
+              },
+              {
+                "Range": [
+                  36,
+                  39
+                ]
+              },
+              {
+                "Single": 96
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/pages/Points.tsx": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_0069f38516b5fc",
+        "line_ranges": [
+          {
+            "Single": 3
+          },
+          {
+            "Range": [
+              215,
+              224
+            ]
+          },
+          {
+            "Range": [
+              271,
+              274
+            ]
+          },
+          {
+            "Single": 277
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9acce203c93669e20b0c",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 3
+              },
+              {
+                "Range": [
+                  215,
+                  224
+                ]
+              },
+              {
+                "Range": [
+                  271,
+                  274
+                ]
+              },
+              {
+                "Single": 277
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "src/pages/WordChallenge.tsx": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_4151e7a3062ffe",
+        "line_ranges": [
+          {
+            "Single": 3
+          },
+          {
+            "Single": 14
+          },
+          {
+            "Range": [
+              580,
+              589
+            ]
+          },
+          {
+            "Range": [
+              619,
+              620
+            ]
+          },
+          {
+            "Range": [
+              622,
+              625
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9a9ce203c93669e20acc",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 3
+              },
+              {
+                "Single": 14
+              },
+              {
+                "Range": [
+                  580,
+                  589
+                ]
+              },
+              {
+                "Range": [
+                  619,
+                  620
+                ]
+              },
+              {
+                "Range": [
+                  622,
+                  625
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_7cbabd6e8b49b0::t_a825d2ab431e95",
+        "line_ranges": [
+          {
+            "Single": 1272
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c9ab7e203c93669e20aec",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 1272
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_7cbabd6e8b49b0": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_0069f38516b5fc": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_4151e7a3062ffe": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_59fee060a012a8": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_a825d2ab431e95": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
