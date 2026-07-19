@@ -147,11 +147,6 @@ function wordAudioUrl(word: string) {
   return `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word.trim())}`
 }
 
-function randomPraise() {
-  const praises = ['Amazing', 'Fantastic', 'Good job', 'Perfect']
-  return praises[Math.floor(Math.random() * praises.length)]
-}
-
 async function playWordAudio(word: string) {
   const audio = new Audio(wordAudioUrl(word))
   audio.preload = 'auto'
@@ -443,6 +438,35 @@ export default function WordChallenge() {
     order: isTaskCompleted || orderDone,
     sentence: isTaskCompleted || sentenceDone,
     done: isTaskCompleted,
+  }
+
+  async function submitSkyAnswer(nextAnswer = skyAnswer) {
+    if (!skyWord || isAutoReading) {
+      return
+    }
+
+    const expected = skyMissingPositions.map((position) => skyLetters[position]).join('')
+    if (nextAnswer !== expected) {
+      setSkyFeedback(`正确答案是 ${skyWord.word}，请重新填一次`)
+      setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+      return
+    }
+
+    setError('')
+    setSkyFeedback('')
+    setSkyPassed((current) => new Set(current).add(skyIndex))
+    setIsAutoReading(true)
+    try {
+      await speakWord(skyWord.word, setError)
+    } finally {
+      setIsAutoReading(false)
+      setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+      if (skyIndex + 1 < skyWords.length) {
+        setSkyIndex(skyIndex + 1)
+      } else {
+        setStage('order')
+      }
+    }
   }
 
   if (isLoading) {
@@ -922,8 +946,12 @@ export default function WordChallenge() {
                                   skyAnswer[index]?.trim() ? skyAnswer[index] : ' ',
                                 )
                                 currentSlots[missingIndex] = nextLetter || ' '
+                                const nextAnswer = currentSlots.join('')
                                 setSkyFeedback('')
-                                setSkyAnswers((current) => ({ ...current, [skyIndex]: currentSlots.join('') }))
+                                setSkyAnswers((current) => ({ ...current, [skyIndex]: nextAnswer }))
+                                if (currentSlots.every((slot) => slot.trim())) {
+                                  void submitSkyAnswer(nextAnswer)
+                                }
                               }}
                             />
                           )
@@ -951,30 +979,8 @@ export default function WordChallenge() {
                         className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                         type="button"
                         disabled={isAutoReading}
-                        onClick={async () => {
-                          const expected = skyMissingPositions.map((position) => skyLetters[position]).join('')
-                          if (skyAnswer !== expected) {
-                            setSkyFeedback(`正确答案是 ${skyWord.word}，请重新填一次`)
-                            setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
-                            return
-                          }
-
-                          setError('')
-                          setSkyFeedback('')
-                          setSkyPassed((current) => new Set(current).add(skyIndex))
-                          setIsAutoReading(true)
-                          try {
-                            await speakWord(randomPraise(), setError)
-                            await speakWord(skyWord.word, setError)
-                          } finally {
-                            setIsAutoReading(false)
-                            setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
-                            if (skyIndex + 1 < skyWords.length) {
-                              setSkyIndex(skyIndex + 1)
-                            } else {
-                              setStage('order')
-                            }
-                          }
+                        onClick={() => {
+                          void submitSkyAnswer()
                         }}
                       >
                         {isAutoReading ? '朗读中...' : skyIndex + 1 < skyWords.length ? '确认，进入下一个' : '进入字母归位'}
