@@ -1,6 +1,7 @@
 import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const WORD_CHALLENGE_STAGE_COUNT = 5
 
 async function requestJson<T>(path: string, token: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -71,7 +72,7 @@ export function completeWordChallengeTask(token: string, taskId: number) {
     token,
     {
       method: 'POST',
-      body: JSON.stringify({ completedStages: 5 }),
+      body: JSON.stringify({ completedStages: WORD_CHALLENGE_STAGE_COUNT }),
     },
   )
 }
