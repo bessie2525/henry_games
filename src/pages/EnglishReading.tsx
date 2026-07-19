@@ -6,6 +6,7 @@ import {
   createEnglishReadingTask,
   deleteEnglishReadingTask,
   fetchEnglishReadingTasks,
+  lookupEnglishReadingWord,
   updateEnglishReadingTask,
   type EnglishReadingTaskPayload,
 } from '@/api/englishReading'
@@ -99,6 +100,10 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function normalizeSelectedLookupWord(value: string) {
+  return value.trim().toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g, '').slice(0, 40)
+}
+
 export default function EnglishReading() {
   const { user, token, isLoading } = useAuth()
   const { taskId } = useParams()
@@ -110,6 +115,7 @@ export default function EnglishReading() {
   const [showOnlyIncompleteTasks, setShowOnlyIncompleteTasks] = useState(true)
   const [isLargeText, setIsLargeText] = useState(false)
   const [selectedWord, setSelectedWord] = useState<ReadingVocabularyWord | null>(null)
+  const [selectedLookupWord, setSelectedLookupWord] = useState('')
   const [notebookWords, setNotebookWords] = useState<ReadingVocabularyWord[]>(() => loadNotebook())
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [taskDate, setTaskDate] = useState(todayString())
@@ -123,6 +129,7 @@ export default function EnglishReading() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLookingUpWord, setIsLookingUpWord] = useState(false)
   const isAdmin = user?.role === 'admin'
 
   const selectedTask = useMemo(() => tasks.find((task) => task.id === selectedTaskId) ?? null, [selectedTaskId, tasks])
@@ -135,6 +142,7 @@ export default function EnglishReading() {
   const answeredCount = Object.keys(answers).length
   const allQuestionsAnswered = Boolean(selectedTask && selectedTask.questions.every((question) => answers[question.id]))
   const canClaimReward = Boolean(!isAdmin && selectedTask && !selectedTask.isCompleted && allQuestionsAnswered)
+  const isSelectedWordSaved = Boolean(selectedWord && notebookWords.some((item) => item.word.toLowerCase() === selectedWord.word.toLowerCase()))
 
   const loadTasks = useCallback(async () => {
     if (!token || !user) {
@@ -164,6 +172,7 @@ export default function EnglishReading() {
     setAnswers({})
     setMessage('')
     setError('')
+    setSelectedLookupWord('')
   }, [selectedTaskId])
 
   useEffect(() => {
@@ -194,6 +203,53 @@ export default function EnglishReading() {
     addNotebookWord(word)
     setSelectedWord(word)
     speakText(word.word, setError)
+  }
+
+  function captureSelectedLookupWord() {
+    const selection = window.getSelection()?.toString() ?? ''
+    const word = normalizeSelectedLookupWord(selection)
+
+    if (word && /^[a-z][a-z'-]{0,39}$/.test(word)) {
+      setSelectedLookupWord(word)
+      return word
+    }
+
+    return ''
+  }
+
+  async function handleLookupSelectedWord() {
+    const word = selectedLookupWord || captureSelectedLookupWord()
+
+    setError('')
+    setMessage('')
+
+    if (!token) {
+      setError('请先登录')
+      return
+    }
+
+    if (!selectedTask || !word) {
+      setError('请先在短文里选中一个英文单词')
+      return
+    }
+
+    const taskWord = selectedTask.vocabulary.find((item) => item.word.toLowerCase() === word.toLowerCase())
+    if (taskWord) {
+      setSelectedWord(taskWord)
+      speakText(taskWord.word, setError)
+      return
+    }
+
+    try {
+      setIsLookingUpWord(true)
+      const response = await lookupEnglishReadingWord(token, word)
+      setSelectedWord(response.word)
+      speakText(response.word.word, setError)
+    } catch (lookupError) {
+      setError(lookupError instanceof Error ? lookupError.message : '单词查询失败')
+    } finally {
+      setIsLookingUpWord(false)
+    }
   }
 
   function buildPayload(): EnglishReadingTaskPayload {
@@ -568,17 +624,35 @@ export default function EnglishReading() {
                 </div>
 
                 <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
-                  <article className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+                  <article
+                    className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+                    onMouseUp={captureSelectedLookupWord}
+                    onTouchEnd={() => window.setTimeout(captureSelectedLookupWord, 120)}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">Read The Story</p>
                         <h3 className="mt-2 text-2xl font-black text-slate-950">读故事</h3>
                       </div>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-orange-700 shadow-sm">
-                        <Search size={16} />
-                        点亮生词可查看解释
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-orange-700 shadow-sm">
+                          <Search size={16} />
+                          点亮生词可查看解释
+                        </span>
+                        <button
+                          className="btn-secondary justify-center px-4 py-2"
+                          type="button"
+                          disabled={isLookingUpWord}
+                          onClick={handleLookupSelectedWord}
+                        >
+                          <Search size={16} />
+                          {isLookingUpWord ? '查询中...' : '查询选中单词'}
+                        </button>
+                      </div>
                     </div>
+                    <p className="mt-3 rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold leading-6 text-orange-800">
+                      鼠标拖选或手机长按选中不会的英文单词，再点击“查询选中单词”。{selectedLookupWord ? `当前选中：${selectedLookupWord}` : '当前还没有选中单词。'}
+                    </p>
 
                     <div className={`mt-6 space-y-5 font-serif text-slate-800 ${isLargeText ? 'text-2xl leading-10 sm:text-3xl sm:leading-[3.2rem]' : 'text-xl leading-9 sm:text-2xl sm:leading-10'}`}>
                       {selectedTask.paragraphs.map((paragraph, paragraphIndex) => (
@@ -685,7 +759,18 @@ export default function EnglishReading() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">Example</p>
               <p className="mt-2 text-lg font-bold leading-7 text-slate-800">{selectedWord.example}</p>
             </div>
-            <button className="btn-primary mt-6 w-full justify-center bg-orange-600 shadow-orange-200 hover:bg-orange-700" type="button" onClick={() => setSelectedWord(null)}>
+            <button
+              className={`mt-6 w-full justify-center ${isSelectedWordSaved ? 'btn-secondary' : 'btn-primary bg-amber-600 shadow-amber-200 hover:bg-amber-700'}`}
+              type="button"
+              disabled={isSelectedWordSaved}
+              onClick={() => {
+                addNotebookWord(selectedWord)
+                setMessage(`已加入生词本：${selectedWord.word}`)
+              }}
+            >
+              {isSelectedWordSaved ? '已加入生词本' : '加入生词本'}
+            </button>
+            <button className="btn-primary mt-3 w-full justify-center bg-orange-600 shadow-orange-200 hover:bg-orange-700" type="button" onClick={() => setSelectedWord(null)}>
               继续阅读
             </button>
           </div>

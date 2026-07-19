@@ -277,6 +277,92 @@ function publicEnglishReadingTask(row, completedTaskIds = new Set(), completionS
   }
 }
 
+function normalizeDictionaryWord(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g, '').slice(0, 40) : ''
+}
+
+function stripHtml(value) {
+  return normalizeText(String(value || '').replace(/<[^>]+>/g, ''), 240)
+}
+
+function collectYoudaoTranslations(entry) {
+  const translations = []
+  const trs = Array.isArray(entry?.trs) ? entry.trs : []
+  for (const item of trs) {
+    const lines = Array.isArray(item?.tr) ? item.tr.flatMap((tr) => tr?.l?.i ?? []) : []
+    for (const line of lines) {
+      const text = normalizeText(line, 120)
+      if (text && !translations.includes(text)) {
+        translations.push(text)
+      }
+    }
+  }
+
+  return translations.slice(0, 4)
+}
+
+function collectYoudaoExamples(data) {
+  const examples = []
+  const sentenceGroups = [data?.blng_sents_part?.['sentence-pair'], data?.media_sents_part?.sent]
+
+  for (const group of sentenceGroups) {
+    if (!Array.isArray(group)) {
+      continue
+    }
+
+    for (const item of group) {
+      const sentence = stripHtml(item?.sentence || item?.eng || item?.['sentence-eng'])
+      const translation = stripHtml(item?.sentence_translation || item?.chn || item?.['sentence-translation'])
+      if (sentence) {
+        examples.push(translation ? `${sentence}（${translation}）` : sentence)
+      }
+    }
+  }
+
+  return examples.slice(0, 2)
+}
+
+async function lookupYoudaoWord(word) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 6000)
+
+  try {
+    const response = await fetch(`https://dict.youdao.com/jsonapi?q=${encodeURIComponent(word)}`, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'henry-games-reading/1.0',
+      },
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+    const entry = data?.ec?.word?.[0]
+    const translations = collectYoudaoTranslations(entry)
+    if (!translations.length) {
+      return null
+    }
+
+    const phonetic = normalizeText(entry?.usphone || entry?.ukphone, 40)
+    const examples = collectYoudaoExamples(data)
+
+    return {
+      id: `dict-${slugText(word)}`,
+      word,
+      phonetic: phonetic ? `/${phonetic}/` : '',
+      meaning: translations.join('；'),
+      example: examples[0] || '暂时没有例句，可以先把这个单词加入生词本，之后再复习。',
+      source: 'youdao',
+    }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 function parseCsvLine(line) {
   const values = []
   let current = ''
@@ -1244,6 +1330,21 @@ app.post('/api/word-challenge/tasks/:id/complete', requireAuth, (req, res) => {
   })()
 
   res.json({ ok: true, alreadyCompleted: false, totalAwardedStars: result.awardedStars + result.bonusStars, ...result })
+})
+
+app.get('/api/english-reading/dictionary', requireAuth, async (req, res) => {
+  const word = normalizeDictionaryWord(req.query.word)
+
+  if (!word || !/^[a-z][a-z'-]{0,39}$/.test(word)) {
+    return res.status(400).json({ error: '请选择一个英文单词再查询' })
+  }
+
+  const dictionaryWord = await lookupYoudaoWord(word)
+  if (!dictionaryWord) {
+    return res.status(404).json({ error: '暂时没有查到这个单词的释义' })
+  }
+
+  res.json({ ok: true, word: dictionaryWord })
 })
 
 app.get('/api/english-reading/tasks', requireAuth, (req, res) => {

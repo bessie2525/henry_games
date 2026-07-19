@@ -1,4 +1,4 @@
-import type { EnglishReadingTask, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
+import type { EnglishReadingTask, ReadingDictionaryResult, ReadingQuestion, ReadingVocabularyWord } from '@/types/englishReading'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -33,6 +33,10 @@ async function requestJson<T>(path: string, token: string, init?: RequestInit): 
 
 export function fetchEnglishReadingTasks(token: string) {
   return requestJson<{ tasks: EnglishReadingTask[] }>('/english-reading/tasks', token)
+}
+
+export function lookupEnglishReadingWord(token: string, word: string) {
+  return requestJson<{ ok: true; word: ReadingDictionaryResult }>(`/english-reading/dictionary?word=${encodeURIComponent(word)}`, token)
 }
 
 export function createEnglishReadingTask(token: string, payload: EnglishReadingTaskPayload) {

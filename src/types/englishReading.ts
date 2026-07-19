@@ -6,6 +6,10 @@ export type ReadingVocabularyWord = {
   example: string
 }
 
+export type ReadingDictionaryResult = ReadingVocabularyWord & {
+  source: 'task' | 'youdao'
+}
+
 export type ReadingQuestion = {
   id: string
   prompt: string
