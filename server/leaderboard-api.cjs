@@ -15,13 +15,16 @@ const tokenExpiresIn = process.env.JWT_EXPIRES_IN || '7d'
 const db = new Database(dbPath)
 const minWordChallengeWords = 2
 const maxWordChallengeWords = 100
+const minEnglishReadingQuestions = 1
+const maxEnglishReadingQuestions = 8
+const maxEnglishReadingVocabulary = 30
 
 app.use(cors())
-app.use(express.json({ limit: '32kb' }))
+app.use(express.json({ limit: '256kb' }))
 
 db.exec(require('node:fs').readFileSync(schemaPath, 'utf8'))
 
-const pointCategories = new Set(['math', 'english', 'english_challenge', 'reading', 'writing', 'housework', 'other'])
+const pointCategories = new Set(['math', 'english', 'english_challenge', 'english_reading', 'reading', 'writing', 'housework', 'other'])
 
 function isValidGameType(value) {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value)
@@ -121,6 +124,251 @@ function publicWordChallengeTask(row, completedTaskIds = new Set(), completionSu
     totalStudentCount: completionSummary?.totalStudentCount ?? 0,
     completions: completionSummary?.completions ?? [],
   }
+}
+
+function slugText(value) {
+  return normalizeText(value, 80)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function normalizeEnglishReadingVocabulary(value) {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const vocabulary = value
+    .map((item) => {
+      const word = normalizeText(item?.word, 40)
+      const id = normalizeText(item?.id, 60) || slugText(word)
+      return {
+        id,
+        word,
+        phonetic: normalizeText(item?.phonetic, 40),
+        meaning: normalizeText(item?.meaning, 100),
+        example: normalizeText(item?.example, 180),
+      }
+    })
+    .filter((item) => item.id && item.word && item.meaning && item.example)
+
+  if (vocabulary.length > maxEnglishReadingVocabulary) {
+    return null
+  }
+
+  const ids = new Set(vocabulary.map((item) => item.id))
+  if (ids.size !== vocabulary.length) {
+    return null
+  }
+
+  return vocabulary
+}
+
+function normalizeEnglishReadingParagraphs(value) {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const paragraphs = value
+    .map((paragraph) => {
+      if (typeof paragraph === 'string') {
+        return normalizeText(paragraph, 1200)
+      }
+
+      if (Array.isArray(paragraph)) {
+        return normalizeText(
+          paragraph
+            .map((segment) => normalizeText(segment?.text ?? segment, 300))
+            .join(''),
+          1200,
+        )
+      }
+
+      return ''
+    })
+    .filter(Boolean)
+
+  return paragraphs.length > 0 ? paragraphs : null
+}
+
+function normalizeEnglishReadingQuestions(value) {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const questions = value
+    .map((item, index) => {
+      const options = Array.isArray(item?.options)
+        ? item.options.map((option) => normalizeText(option, 120)).filter(Boolean)
+        : String(item?.options || '')
+            .split('|')
+            .map((option) => normalizeText(option, 120))
+            .filter(Boolean)
+      const answer = normalizeText(item?.answer, 120)
+
+      return {
+        id: normalizeText(item?.id, 40) || `q${index + 1}`,
+        prompt: normalizeText(item?.prompt, 240),
+        options,
+        answer,
+        explanation: normalizeText(item?.explanation, 500),
+        paragraphHint: normalizeText(item?.paragraphHint ?? item?.hint, 240),
+      }
+    })
+    .filter((item) => item.prompt && item.options.length >= 2 && item.answer && item.options.includes(item.answer) && item.explanation)
+
+  if (questions.length < minEnglishReadingQuestions || questions.length > maxEnglishReadingQuestions) {
+    return null
+  }
+
+  return questions
+}
+
+function estimateEnglishWordCount(paragraphs) {
+  return paragraphs.join(' ').split(/\s+/).filter(Boolean).length
+}
+
+function normalizeEnglishReadingTaskPayload(value) {
+  const taskDate = value?.taskDate
+  const title = normalizeText(value?.title, 120) || '每日英语阅读小达人'
+  const level = normalizeText(value?.level, 40) || '入门'
+  const summary = normalizeText(value?.summary, 500)
+  const vocabulary = normalizeEnglishReadingVocabulary(value?.vocabulary)
+  const paragraphs = normalizeEnglishReadingParagraphs(value?.paragraphs)
+  const questions = normalizeEnglishReadingQuestions(value?.questions)
+
+  if (!isValidRecordDate(taskDate) || !summary || !paragraphs || !questions || vocabulary === null) {
+    return null
+  }
+
+  const providedWordCount = Number(value?.wordCount)
+  const wordCount = Number.isInteger(providedWordCount) && providedWordCount > 0 ? Math.min(providedWordCount, 5000) : estimateEnglishWordCount(paragraphs)
+
+  return {
+    taskDate,
+    title,
+    level,
+    wordCount,
+    summary,
+    vocabulary,
+    paragraphs,
+    questions,
+  }
+}
+
+function publicEnglishReadingTask(row, completedTaskIds = new Set(), completionSummary = null) {
+  return {
+    id: row.id,
+    taskDate: row.task_date,
+    title: row.title,
+    level: row.level,
+    wordCount: row.word_count,
+    summary: row.summary,
+    vocabulary: safeJsonParse(row.vocabulary_json, []),
+    paragraphs: safeJsonParse(row.paragraphs_json, []),
+    questions: safeJsonParse(row.questions_json, []),
+    createdByUserId: row.created_by_user_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    isCompleted: completedTaskIds.has(row.id),
+    completionCount: completionSummary?.completionCount ?? 0,
+    totalStudentCount: completionSummary?.totalStudentCount ?? 0,
+    completions: completionSummary?.completions ?? [],
+  }
+}
+
+function parseCsvLine(line) {
+  const values = []
+  let current = ''
+  let inQuotes = false
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index]
+    const nextChar = line[index + 1]
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      current += '"'
+      index += 1
+      continue
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes
+      continue
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  values.push(current.trim())
+  return values
+}
+
+function parseCsvRows(content) {
+  const lines = String(content || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  if (lines.length < 2) {
+    return []
+  }
+
+  const headers = parseCsvLine(lines[0])
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line)
+    return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']))
+  })
+}
+
+function englishReadingTaskFromCsvRow(row) {
+  const vocabulary = String(row.vocabulary || '')
+    .split(';;')
+    .map((entry) => {
+      const [word, phonetic, meaning, example] = entry.split('|').map((item) => item?.trim() || '')
+      return { word, phonetic, meaning, example }
+    })
+    .filter((item) => item.word || item.meaning || item.example)
+
+  const questions = []
+  for (let index = 1; index <= maxEnglishReadingQuestions; index += 1) {
+    const prompt = row[`q${index}Prompt`]
+    if (!prompt) {
+      continue
+    }
+
+    questions.push({
+      id: `q${index}`,
+      prompt,
+      options: String(row[`q${index}Options`] || '')
+        .split('|')
+        .map((option) => option.trim())
+        .filter(Boolean),
+      answer: row[`q${index}Answer`],
+      explanation: row[`q${index}Explanation`],
+      paragraphHint: row[`q${index}Hint`],
+    })
+  }
+
+  return normalizeEnglishReadingTaskPayload({
+    taskDate: row.taskDate,
+    title: row.title,
+    level: row.level,
+    wordCount: Number(row.wordCount),
+    summary: row.summary,
+    paragraphs: String(row.paragraphs || '')
+      .split('||')
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
+    vocabulary,
+    questions,
+  })
 }
 
 function calculateWordChallengeStreak(studentUserId, endDate) {
@@ -300,6 +548,7 @@ app.patch('/api/auth/me', requireAuth, (req, res) => {
       db.prepare('UPDATE fixed_leaderboard SET username = ? WHERE user_id = ?').run(username, req.user.id)
       db.prepare('UPDATE student_point_records SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
       db.prepare('UPDATE word_challenge_completions SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
+      db.prepare('UPDATE english_reading_completions SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
     })()
 
     const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(req.user.id)
@@ -995,6 +1244,288 @@ app.post('/api/word-challenge/tasks/:id/complete', requireAuth, (req, res) => {
   })()
 
   res.json({ ok: true, alreadyCompleted: false, totalAwardedStars: result.awardedStars + result.bonusStars, ...result })
+})
+
+app.get('/api/english-reading/tasks', requireAuth, (req, res) => {
+  const taskDate = typeof req.query.date === 'string' && isValidRecordDate(req.query.date) ? req.query.date : null
+  const where = []
+  const params = []
+
+  if (req.user.role === 'student') {
+    where.push('task_date <= ?')
+    params.push(todayDateString())
+  } else if (taskDate) {
+    where.push('task_date = ?')
+    params.push(taskDate)
+  }
+
+  const tasks = db
+    .prepare(
+      `
+      SELECT
+        id,
+        task_date,
+        title,
+        level,
+        word_count,
+        summary,
+        vocabulary_json,
+        paragraphs_json,
+        questions_json,
+        created_by_user_id,
+        created_at,
+        updated_at
+      FROM english_reading_tasks
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY task_date DESC, created_at DESC, id DESC
+      LIMIT 60
+    `,
+    )
+    .all(...params)
+
+  const completedTaskIds = new Set()
+  const completionSummaries = new Map()
+  if (req.user.role === 'student' && tasks.length > 0) {
+    const completionRows = db
+      .prepare(
+        `
+        SELECT task_id AS taskId
+        FROM english_reading_completions
+        WHERE student_user_id = ?
+      `,
+      )
+      .all(req.user.id)
+
+    for (const row of completionRows) {
+      completedTaskIds.add(row.taskId)
+    }
+  }
+  if (req.user.role === 'admin' && tasks.length > 0) {
+    const taskIds = tasks.map((task) => task.id)
+    const placeholders = taskIds.map(() => '?').join(',')
+    const totalStudentCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'student'").get().count
+    const completionRows = db
+      .prepare(
+        `
+        SELECT
+          task_id AS taskId,
+          student_user_id AS studentUserId,
+          student_username AS studentUsername,
+          completed_at AS completedAt
+        FROM english_reading_completions
+        WHERE task_id IN (${placeholders})
+        ORDER BY completed_at DESC, id DESC
+      `,
+      )
+      .all(...taskIds)
+
+    for (const taskId of taskIds) {
+      completionSummaries.set(taskId, { completionCount: 0, totalStudentCount, completions: [] })
+    }
+    for (const row of completionRows) {
+      const summary = completionSummaries.get(row.taskId)
+      if (!summary) {
+        continue
+      }
+      summary.completionCount += 1
+      summary.completions.push({
+        studentUserId: row.studentUserId,
+        studentUsername: row.studentUsername,
+        completedAt: row.completedAt,
+      })
+    }
+  }
+
+  res.json({ tasks: tasks.map((task) => publicEnglishReadingTask(task, completedTaskIds, completionSummaries.get(task.id))) })
+})
+
+app.post('/api/english-reading/tasks', requireAuth, requireAdmin, (req, res) => {
+  const task = normalizeEnglishReadingTaskPayload(req.body)
+
+  if (!task) {
+    return res.status(400).json({ error: 'Invalid English reading task' })
+  }
+
+  const result = db
+    .prepare(
+      `
+      INSERT INTO english_reading_tasks
+        (task_date, title, level, word_count, summary, vocabulary_json, paragraphs_json, questions_json, created_by_user_id)
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    )
+    .run(
+      task.taskDate,
+      task.title,
+      task.level,
+      task.wordCount,
+      task.summary,
+      JSON.stringify(task.vocabulary),
+      JSON.stringify(task.paragraphs),
+      JSON.stringify(task.questions),
+      req.user.id,
+    )
+
+  const savedTask = db.prepare('SELECT * FROM english_reading_tasks WHERE id = ?').get(result.lastInsertRowid)
+  res.json({ ok: true, task: publicEnglishReadingTask(savedTask) })
+})
+
+app.post('/api/english-reading/tasks/import-csv', express.text({ type: ['text/csv', 'text/plain'], limit: '256kb' }), requireAuth, requireAdmin, (req, res) => {
+  const rows = parseCsvRows(req.body)
+  const tasks = rows.map(englishReadingTaskFromCsvRow)
+
+  if (tasks.length === 0 || tasks.some((task) => !task)) {
+    return res.status(400).json({ error: 'Invalid English reading CSV' })
+  }
+
+  const insertTasks = db.transaction(() =>
+    tasks.map((task) => {
+      const result = db
+        .prepare(
+          `
+          INSERT INTO english_reading_tasks
+            (task_date, title, level, word_count, summary, vocabulary_json, paragraphs_json, questions_json, created_by_user_id)
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        )
+        .run(
+          task.taskDate,
+          task.title,
+          task.level,
+          task.wordCount,
+          task.summary,
+          JSON.stringify(task.vocabulary),
+          JSON.stringify(task.paragraphs),
+          JSON.stringify(task.questions),
+          req.user.id,
+        )
+
+      const savedTask = db.prepare('SELECT * FROM english_reading_tasks WHERE id = ?').get(result.lastInsertRowid)
+      return publicEnglishReadingTask(savedTask)
+    }),
+  )
+
+  res.json({ ok: true, tasks: insertTasks() })
+})
+
+app.patch('/api/english-reading/tasks/:id', requireAuth, requireAdmin, (req, res) => {
+  const taskId = Number(req.params.id)
+  const task = normalizeEnglishReadingTaskPayload(req.body)
+
+  if (!Number.isInteger(taskId) || !task) {
+    return res.status(400).json({ error: 'Invalid English reading task' })
+  }
+
+  const result = db
+    .prepare(
+      `
+      UPDATE english_reading_tasks
+      SET
+        task_date = ?,
+        title = ?,
+        level = ?,
+        word_count = ?,
+        summary = ?,
+        vocabulary_json = ?,
+        paragraphs_json = ?,
+        questions_json = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+    )
+    .run(
+      task.taskDate,
+      task.title,
+      task.level,
+      task.wordCount,
+      task.summary,
+      JSON.stringify(task.vocabulary),
+      JSON.stringify(task.paragraphs),
+      JSON.stringify(task.questions),
+      taskId,
+    )
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'English reading task not found' })
+  }
+
+  const savedTask = db.prepare('SELECT * FROM english_reading_tasks WHERE id = ?').get(taskId)
+  res.json({ ok: true, task: publicEnglishReadingTask(savedTask) })
+})
+
+app.delete('/api/english-reading/tasks/:id', requireAuth, requireAdmin, (req, res) => {
+  const taskId = Number(req.params.id)
+
+  if (!Number.isInteger(taskId)) {
+    return res.status(400).json({ error: 'Invalid English reading task' })
+  }
+
+  const deleteTask = db.transaction(() => {
+    db.prepare('DELETE FROM english_reading_completions WHERE task_id = ?').run(taskId)
+    return db.prepare('DELETE FROM english_reading_tasks WHERE id = ?').run(taskId)
+  })
+
+  const result = deleteTask()
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'English reading task not found' })
+  }
+
+  res.json({ ok: true })
+})
+
+app.post('/api/english-reading/tasks/:id/complete', requireAuth, (req, res) => {
+  const taskId = Number(req.params.id)
+
+  if (!Number.isInteger(taskId)) {
+    return res.status(400).json({ error: 'Invalid completion' })
+  }
+
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Student permission required' })
+  }
+
+  const task = db.prepare('SELECT id, task_date, title FROM english_reading_tasks WHERE id = ?').get(taskId)
+  if (!task) {
+    return res.status(404).json({ error: 'English reading task not found' })
+  }
+
+  if (task.task_date > todayDateString()) {
+    return res.status(400).json({ error: 'Cannot complete a future English reading task' })
+  }
+
+  const existing = db
+    .prepare('SELECT id, point_record_id AS pointRecordId FROM english_reading_completions WHERE task_id = ? AND student_user_id = ?')
+    .get(taskId, req.user.id)
+
+  if (existing) {
+    return res.json({ ok: true, alreadyCompleted: true, pointRecordId: existing.pointRecordId })
+  }
+
+  const pointRecordId = db.transaction(() => {
+    const pointResult = db
+      .prepare(
+        `
+        INSERT INTO student_point_records
+          (student_user_id, student_username, category, stars, record_date, detail, note, created_by_user_id)
+        VALUES
+          (?, ?, 'english_reading', 1, ?, ?, ?, ?)
+      `,
+      )
+      .run(req.user.id, req.user.username, task.task_date, task.title, '完成英语阅读小达人，系统自动加星', req.user.id)
+
+    db.prepare(
+      `
+      INSERT INTO english_reading_completions (task_id, student_user_id, student_username, point_record_id)
+      VALUES (?, ?, ?, ?)
+    `,
+    ).run(taskId, req.user.id, req.user.username, pointResult.lastInsertRowid)
+
+    return pointResult.lastInsertRowid
+  })()
+
+  res.json({ ok: true, alreadyCompleted: false, pointRecordId, awardedStars: 1 })
 })
 
 app.listen(port, host, () => {

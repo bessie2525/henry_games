@@ -27,6 +27,12 @@ export const pointCategories: PointCategory[] = [
     suggestedRange: '系统自动 2 颗星',
   },
   {
+    id: 'english_reading',
+    name: 'English Reading',
+    description: '完成管理员发布的每日英语阅读小达人任务，自动积 1 颗星。',
+    suggestedRange: '系统自动 1 颗星',
+  },
+  {
     id: 'reading',
     name: '读书',
     description: '每天读书 45 分钟，写一句读后感，积 1 颗星；每多读 30 分钟，多积 1 颗星。',

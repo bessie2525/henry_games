@@ -6,11 +6,6 @@ export type ReadingVocabularyWord = {
   example: string
 }
 
-export type ReadingStorySegment = {
-  text: string
-  vocabId?: string
-}
-
 export type ReadingQuestion = {
   id: string
   prompt: string
@@ -20,14 +15,25 @@ export type ReadingQuestion = {
   paragraphHint: string
 }
 
-export type EnglishReadingArticle = {
-  id: string
+export type EnglishReadingTask = {
+  id: number
+  taskDate: string
   title: string
-  emoji: string
   level: string
   wordCount: number
   summary: string
   vocabulary: ReadingVocabularyWord[]
-  paragraphs: ReadingStorySegment[][]
+  paragraphs: string[]
   questions: ReadingQuestion[]
+  createdByUserId: number
+  createdAt: string
+  updatedAt: string
+  isCompleted: boolean
+  completionCount: number
+  totalStudentCount: number
+  completions: {
+    studentUserId: number
+    studentUsername: string
+    completedAt: string
+  }[]
 }

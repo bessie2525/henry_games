@@ -90,3 +90,38 @@ CREATE TABLE IF NOT EXISTS word_challenge_completions (
 
 CREATE INDEX IF NOT EXISTS idx_word_challenge_completions_student
 ON word_challenge_completions(student_user_id, completed_at);
+
+CREATE TABLE IF NOT EXISTS english_reading_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_date TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  level TEXT NOT NULL DEFAULT '',
+  word_count INTEGER NOT NULL DEFAULT 0,
+  summary TEXT NOT NULL DEFAULT '',
+  vocabulary_json TEXT NOT NULL,
+  paragraphs_json TEXT NOT NULL,
+  questions_json TEXT NOT NULL,
+  created_by_user_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_english_reading_tasks_date
+ON english_reading_tasks(task_date);
+
+CREATE TABLE IF NOT EXISTS english_reading_completions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  student_user_id INTEGER NOT NULL,
+  student_username TEXT NOT NULL,
+  point_record_id INTEGER,
+  completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(task_id, student_user_id),
+  FOREIGN KEY(task_id) REFERENCES english_reading_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY(student_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(point_record_id) REFERENCES student_point_records(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_english_reading_completions_student
+ON english_reading_completions(student_user_id, completed_at);
