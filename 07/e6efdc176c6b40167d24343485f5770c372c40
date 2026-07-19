@@ -1,0 +1,101 @@
+src/pages/WordChallenge.tsx
+  s_7cbabd6e8b49b0::t_d8127c306abdba 443-471,949,951-954,982-983 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a5c8c52e203c93669e204be","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[443,471]},{"Single":949},{"Range":[951,954]},{"Range":[982,983]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "07e6efdc176c6b40167d24343485f5770c372c40",
+  "prompts": {},
+  "humans": {
+    "h_1c39b08af7a710": {
+      "author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_7cbabd6e8b49b0": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a538a3cd0eb1e94f07fcd6d",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "bytedance <bytedance@users.noreply.github.com>"
+    }
+  },
+  "attestation_metadata": {
+    "src/pages/WordChallenge.tsx": [
+      {
+        "hash": "s_7cbabd6e8b49b0::t_d8127c306abdba",
+        "line_ranges": [
+          {
+            "Range": [
+              443,
+              471
+            ]
+          },
+          {
+            "Single": 949
+          },
+          {
+            "Range": [
+              951,
+              954
+            ]
+          },
+          {
+            "Range": [
+              982,
+              983
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a5c8c52e203c93669e204be",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  443,
+                  471
+                ]
+              },
+              {
+                "Single": 949
+              },
+              {
+                "Range": [
+                  951,
+                  954
+                ]
+              },
+              {
+                "Range": [
+                  982,
+                  983
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_7cbabd6e8b49b0": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7cbabd6e8b49b0::t_d8127c306abdba": {
+      "tool": "trae",
+      "conversation_id": "6a538a3cd0eb1e94f07fcd6d",
+      "session_id": "6a538a3cd0eb1e94f07fcd6d",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
