@@ -153,7 +153,7 @@ async function playWordAudio(word: string) {
   audio.volume = 1
 
   await new Promise<void>((resolve, reject) => {
-    const timeoutId = window.setTimeout(resolve, 3000)
+    const timeoutId = window.setTimeout(resolve, Math.min(8000, Math.max(3000, word.length * 120)))
     audio.onended = () => {
       window.clearTimeout(timeoutId)
       resolve()
@@ -1044,6 +1044,7 @@ export default function WordChallenge() {
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                         <input
                           className="min-w-0 flex-1 rounded-2xl border border-blue-100 px-4 py-3 text-lg font-black lowercase outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                          disabled={isAutoReading}
                           value={sentenceAnswer}
                           onChange={(event) => {
                             setSentenceFeedback('')
@@ -1057,6 +1058,7 @@ export default function WordChallenge() {
                         <button
                           className="btn-secondary justify-center"
                           type="button"
+                          disabled={isAutoReading}
                           onClick={() =>
                             setVisibleSentenceHints((current) => {
                               const next = new Set(current)
@@ -1087,14 +1089,15 @@ export default function WordChallenge() {
                           setSentenceFeedback('')
                           setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
                         }}
-                        disabled={!sentenceAnswer}
+                        disabled={!sentenceAnswer || isAutoReading}
                       >
                         清空
                       </button>
                       <button
                         className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
                         type="button"
-                        onClick={() => {
+                        disabled={isAutoReading}
+                        onClick={async () => {
                           if (sentenceAnswer !== cleanLetters(sentenceWord.word)) {
                             setSentenceFeedback(`正确答案是 ${sentenceWord.word}，请重新填一次`)
                             setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
@@ -1104,13 +1107,19 @@ export default function WordChallenge() {
                           setError('')
                           setSentenceFeedback('')
                           setSentencePassed((current) => new Set(current).add(sentenceIndex))
-                          setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
-                          if (sentenceIndex + 1 < sentenceWords.length) {
-                            setSentenceIndex(sentenceIndex + 1)
+                          setIsAutoReading(true)
+                          try {
+                            await speakWord(sentenceWord.example, setError)
+                          } finally {
+                            setIsAutoReading(false)
+                            setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
+                            if (sentenceIndex + 1 < sentenceWords.length) {
+                              setSentenceIndex(sentenceIndex + 1)
+                            }
                           }
                         }}
                       >
-                        {sentenceIndex + 1 < sentenceWords.length ? '确认，进入下一题' : '确认'}
+                        {isAutoReading ? '朗读中...' : sentenceIndex + 1 < sentenceWords.length ? '确认，进入下一题' : '确认'}
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {sentencePassed.size} / {sentenceWords.length}</p>
