@@ -10,6 +10,7 @@ git pull origin main
 sudo apt install -y sqlite3
 ./scripts/init-leaderboard-db.sh
 node scripts/migrate-account-db.mjs
+node scripts/migrate-student-points-db.mjs
 ```
 
 The default database path is:
@@ -43,6 +44,7 @@ Import it into the default leaderboard database:
 ```bash
 cd /var/www/henry_games
 node scripts/migrate-account-db.mjs
+node scripts/migrate-student-points-db.mjs
 node scripts/import-local-scores-to-sqlite.mjs /tmp/local-scores.json
 ```
 

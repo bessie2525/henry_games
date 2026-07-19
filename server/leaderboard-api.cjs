@@ -19,6 +19,8 @@ app.use(express.json({ limit: '32kb' }))
 
 db.exec(require('node:fs').readFileSync(schemaPath, 'utf8'))
 
+const pointCategories = new Set(['math', 'english', 'reading', 'writing', 'housework', 'other'])
+
 function isValidGameType(value) {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value)
 }
@@ -37,6 +39,38 @@ function isValidUsername(value) {
 
 function isValidPassword(value) {
   return typeof value === 'string' && value.length >= 6 && value.length <= 72
+}
+
+function isAdmin(user) {
+  return user?.role === 'admin'
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdmin(req.user)) {
+    return res.status(403).json({ error: 'Admin permission required' })
+  }
+
+  return next()
+}
+
+function isValidRecordDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`))
+}
+
+function normalizeText(value, maxLength = 500) {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
+}
+
+function isValidPointCategory(value) {
+  return typeof value === 'string' && pointCategories.has(value)
+}
+
+function getStudentById(userId) {
+  if (!Number.isInteger(userId)) {
+    return null
+  }
+
+  return db.prepare("SELECT id, username, role FROM users WHERE id = ? AND role = 'student'").get(userId) ?? null
 }
 
 function publicUser(user) {
@@ -172,6 +206,7 @@ app.patch('/api/auth/me', requireAuth, (req, res) => {
       db.prepare('UPDATE users SET username = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(username, req.user.id)
       db.prepare('UPDATE challenge_leaderboard SET username = ? WHERE user_id = ?').run(username, req.user.id)
       db.prepare('UPDATE fixed_leaderboard SET username = ? WHERE user_id = ?').run(username, req.user.id)
+      db.prepare('UPDATE student_point_records SET student_username = ? WHERE student_user_id = ?').run(username, req.user.id)
     })()
 
     const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(req.user.id)
@@ -347,6 +382,269 @@ app.post('/api/leaderboard/fixed', requireAuth, (req, res) => {
       END
   `,
   ).run(req.user.id, req.user.username, gameType, difficulty, questionCount, accuracy, correctCount, totalCount)
+
+  res.json({ ok: true })
+})
+
+app.get('/api/points/students', requireAuth, requireAdmin, (_req, res) => {
+  const rows = db
+    .prepare(
+      `
+      SELECT id, username
+      FROM users
+      WHERE role = 'student'
+      ORDER BY username ASC
+    `,
+    )
+    .all()
+
+  res.json(rows)
+})
+
+app.post('/api/points/records', requireAuth, (req, res) => {
+  const category = req.body?.category
+  const stars = toInteger(req.body?.stars)
+  const recordDate = req.body?.recordDate
+  const detail = normalizeText(req.body?.detail, 100)
+  const note = normalizeText(req.body?.note, 500)
+  const requestedStudentUserId = toInteger(req.body?.studentUserId)
+
+  if (
+    !isValidPointCategory(category) ||
+    !Number.isInteger(stars) ||
+    stars < 0 ||
+    stars > 100 ||
+    !isValidRecordDate(recordDate) ||
+    (category === 'other' && !detail)
+  ) {
+    return res.status(400).json({ error: 'Invalid point record' })
+  }
+
+  let student = null
+
+  if (isAdmin(req.user)) {
+    student = getStudentById(requestedStudentUserId)
+    if (!student) {
+      return res.status(400).json({ error: 'Invalid student' })
+    }
+  } else {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ error: 'Student permission required' })
+    }
+
+    if (Number.isInteger(requestedStudentUserId) && requestedStudentUserId !== req.user.id) {
+      return res.status(403).json({ error: 'Cannot create records for another student' })
+    }
+
+    student = {
+      id: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+    }
+  }
+
+  const result = db
+    .prepare(
+      `
+      INSERT INTO student_point_records
+        (student_user_id, student_username, category, stars, record_date, detail, note, created_by_user_id)
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    )
+    .run(student.id, student.username, category, stars, recordDate, detail, note, req.user.id)
+
+  const record = db
+    .prepare(
+      `
+      SELECT
+        id,
+        student_user_id AS studentUserId,
+        student_username AS studentUsername,
+        category,
+        stars,
+        record_date AS recordDate,
+        detail,
+        note,
+        created_by_user_id AS createdByUserId,
+        updated_by_user_id AS updatedByUserId,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM student_point_records
+      WHERE id = ?
+    `,
+    )
+    .get(result.lastInsertRowid)
+
+  res.json({ ok: true, record })
+})
+
+app.get('/api/points/records', requireAuth, (req, res) => {
+  const requestedStudentUserId = req.query.studentUserId ? Number(req.query.studentUserId) : null
+  const from = typeof req.query.from === 'string' ? req.query.from : null
+  const to = typeof req.query.to === 'string' ? req.query.to : null
+  const limit = Math.min(Math.max(Number(req.query.limit) || 200, 1), 500)
+  const where = []
+  const params = []
+
+  if (isAdmin(req.user)) {
+    if (Number.isInteger(requestedStudentUserId)) {
+      where.push('student_user_id = ?')
+      params.push(requestedStudentUserId)
+    }
+  } else {
+    where.push('student_user_id = ?')
+    params.push(req.user.id)
+  }
+
+  if (from && isValidRecordDate(from)) {
+    where.push('record_date >= ?')
+    params.push(from)
+  }
+
+  if (to && isValidRecordDate(to)) {
+    where.push('record_date <= ?')
+    params.push(to)
+  }
+
+  const rows = db
+    .prepare(
+      `
+      SELECT
+        id,
+        student_user_id AS studentUserId,
+        student_username AS studentUsername,
+        category,
+        stars,
+        record_date AS recordDate,
+        detail,
+        note,
+        created_by_user_id AS createdByUserId,
+        updated_by_user_id AS updatedByUserId,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM student_point_records
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY record_date DESC, created_at DESC, id DESC
+      LIMIT ?
+    `,
+    )
+    .all(...params, limit)
+
+  res.json({ records: rows })
+})
+
+app.get('/api/points/summary', requireAuth, (req, res) => {
+  const requestedStudentUserId = req.query.studentUserId ? Number(req.query.studentUserId) : null
+  const from = typeof req.query.from === 'string' ? req.query.from : null
+  const to = typeof req.query.to === 'string' ? req.query.to : null
+  const where = []
+  const params = []
+
+  if (isAdmin(req.user)) {
+    if (Number.isInteger(requestedStudentUserId)) {
+      where.push('student_user_id = ?')
+      params.push(requestedStudentUserId)
+    }
+  } else {
+    where.push('student_user_id = ?')
+    params.push(req.user.id)
+  }
+
+  if (from && isValidRecordDate(from)) {
+    where.push('record_date >= ?')
+    params.push(from)
+  }
+
+  if (to && isValidRecordDate(to)) {
+    where.push('record_date <= ?')
+    params.push(to)
+  }
+
+  const rows = db
+    .prepare(
+      `
+      SELECT
+        record_date AS recordDate,
+        category,
+        SUM(stars) AS stars
+      FROM student_point_records
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      GROUP BY record_date, category
+      ORDER BY record_date DESC
+    `,
+    )
+    .all(...params)
+
+  const summaryByDate = new Map()
+  let totalStars = 0
+
+  for (const row of rows) {
+    if (!summaryByDate.has(row.recordDate)) {
+      summaryByDate.set(row.recordDate, {
+        recordDate: row.recordDate,
+        byCategory: {
+          math: 0,
+          english: 0,
+          reading: 0,
+          writing: 0,
+          housework: 0,
+          other: 0,
+        },
+        totalStars: 0,
+      })
+    }
+
+    const summary = summaryByDate.get(row.recordDate)
+    const stars = Number(row.stars) || 0
+    summary.byCategory[row.category] = stars
+    summary.totalStars += stars
+    totalStars += stars
+  }
+
+  res.json({
+    dailySummaries: Array.from(summaryByDate.values()),
+    totalStars,
+  })
+})
+
+app.patch('/api/points/records/:id', requireAuth, requireAdmin, (req, res) => {
+  const recordId = Number(req.params.id)
+  const category = req.body?.category
+  const stars = toInteger(req.body?.stars)
+  const detail = normalizeText(req.body?.detail, 100)
+  const note = normalizeText(req.body?.note, 500)
+
+  if (
+    !Number.isInteger(recordId) ||
+    !isValidPointCategory(category) ||
+    !Number.isInteger(stars) ||
+    stars < 0 ||
+    stars > 100 ||
+    (category === 'other' && !detail)
+  ) {
+    return res.status(400).json({ error: 'Invalid point record' })
+  }
+
+  const result = db
+    .prepare(
+      `
+      UPDATE student_point_records
+      SET
+        category = ?,
+        stars = ?,
+        detail = ?,
+        note = ?,
+        updated_by_user_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+    )
+    .run(category, stars, detail, note, req.user.id, recordId)
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Point record not found' })
+  }
 
   res.json({ ok: true })
 })

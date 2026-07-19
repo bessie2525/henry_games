@@ -14,6 +14,7 @@ npm install --prefix server
 
 ./scripts/init-leaderboard-db.sh
 node scripts/migrate-account-db.mjs
+node scripts/migrate-student-points-db.mjs
 pm2 start server/leaderboard-api.cjs --name henry-games-api
 pm2 save
 ```
@@ -77,6 +78,7 @@ After pulling the account feature on an existing server, run:
 cd /var/www/henry_games
 npm install --prefix server
 node scripts/migrate-account-db.mjs
+node scripts/migrate-student-points-db.mjs
 pm2 restart henry-games-api
 npm run build
 ```
@@ -87,4 +89,5 @@ The migration keeps existing anonymous leaderboard records and adds account-awar
 users
 challenge_leaderboard.user_id
 fixed_leaderboard.user_id
+student_point_records
 ```

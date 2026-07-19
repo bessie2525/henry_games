@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
+import Points from "@/pages/Points";
 import ChimpTestGame from "@/games/chimpTest/ChimpTestGame";
 import NBackGame from "@/games/nBack/NBackGame";
 import NumberMemoryGame from "@/games/numberMemory/NumberMemoryGame";
@@ -14,6 +15,7 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/points" element={<Points />} />
           <Route path="/games/chimp-test" element={<ChimpTestGame />} />
           <Route path="/games/number-memory" element={<NumberMemoryGame />} />
           <Route path="/games/sequential-memory" element={<SequentialMemoryGame />} />
