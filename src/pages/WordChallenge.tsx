@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge'
 
 type AuthMode = 'login' | 'register'
-type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'spelling' | 'done'
+type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'spelling' | 'sentence' | 'done'
 
 const stages: { id: Stage; name: string }[] = [
   { id: 'learn', name: '学新词' },
@@ -20,6 +20,7 @@ const stages: { id: Stage; name: string }[] = [
   { id: 'order', name: '字母归位' },
   { id: 'sky', name: '字母天空' },
   { id: 'spelling', name: '单词拼写' },
+  { id: 'sentence', name: '例句填空' },
 ]
 
 function todayString() {
@@ -30,7 +31,6 @@ function emptyWords(): WordChallengeWord[] {
   return Array.from({ length: 10 }, () => ({
     word: '',
     phonetic: '',
-    image: '⭐',
     meaning: '',
     example: '',
   }))
@@ -42,6 +42,12 @@ function cleanLetters(word: string) {
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function blankExample(example: string, word: string) {
+  const pattern = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'ig')
+  const blanked = example.replace(pattern, '____')
+  return blanked === example ? `${example}  ____` : blanked
 }
 
 function shuffleText(text: string) {
@@ -108,6 +114,8 @@ export default function WordChallenge() {
   const [skyPassed, setSkyPassed] = useState<Set<number>>(new Set())
   const [spellAnswers, setSpellAnswers] = useState<Record<number, string>>({})
   const [spellPassed, setSpellPassed] = useState<Set<number>>(new Set())
+  const [sentenceAnswers, setSentenceAnswers] = useState<Record<number, string>>({})
+  const [sentencePassed, setSentencePassed] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -144,6 +152,8 @@ export default function WordChallenge() {
     setSkyPassed(new Set())
     setSpellAnswers({})
     setSpellPassed(new Set())
+    setSentenceAnswers({})
+    setSentencePassed(new Set())
     setMessage('')
     setError('')
   }
@@ -211,6 +221,7 @@ export default function WordChallenge() {
   const meaningDone = activeWords.length > 0 && activeWords.every((word, index) => meaningAnswers[index] === word.meaning)
   const skyDone = activeWords.length > 0 && skyPassed.size === activeWords.length
   const spellingDone = activeWords.length > 0 && spellPassed.size === activeWords.length
+  const sentenceDone = activeWords.length > 0 && sentencePassed.size === activeWords.length
 
   if (isLoading) {
     return (
@@ -240,7 +251,7 @@ export default function WordChallenge() {
             <p className="text-5xl">🔤</p>
             <h2 className="mt-4 text-3xl font-black text-slate-950">请先登录后开始单词闯关</h2>
             <p className="mx-auto mt-4 max-w-2xl font-semibold leading-7 text-slate-600">
-              管理员发布每日 10 个单词任务，学生完成五个环节后自动获得 2 颗英语闯关星星。
+              管理员发布每日 10 个单词任务，学生完成六个环节后自动获得 2 颗英语闯关星星。
             </p>
             <button className="btn-primary mt-6 bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" onClick={() => setAuthMode('login')}>
               <LogIn size={18} />
@@ -322,10 +333,9 @@ export default function WordChallenge() {
 
               <div className="grid gap-3">
                 {words.map((item, index) => (
-                  <div key={index} className="grid gap-2 rounded-3xl bg-blue-50/70 p-3 md:grid-cols-[1fr_1fr_0.7fr_1.2fr_2fr]">
+                  <div key={index} className="grid gap-2 rounded-3xl bg-blue-50/70 p-3 md:grid-cols-[1fr_1fr_1.2fr_2fr]">
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.word} onChange={(event) => updateWord(index, { word: event.target.value })} placeholder={`单词 ${index + 1}`} />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.phonetic} onChange={(event) => updateWord(index, { phonetic: event.target.value })} placeholder="音标" />
-                    <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.image} onChange={(event) => updateWord(index, { image: event.target.value })} placeholder="图案" />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.meaning} onChange={(event) => updateWord(index, { meaning: event.target.value })} placeholder="中文" />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.example} onChange={(event) => updateWord(index, { example: event.target.value })} placeholder="英文例句" />
                   </div>
@@ -389,7 +399,7 @@ export default function WordChallenge() {
                   重新开始
                 </button>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
+              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-6">
                 {stages.map((item) => (
                   <button
                     key={item.id}
@@ -434,8 +444,7 @@ export default function WordChallenge() {
                     >
                       {!flipped ? (
                         <>
-                          <p className="text-5xl">{item.image || '⭐'}</p>
-                          <p className="mt-4 text-3xl font-black text-slate-950">{item.word}</p>
+                          <p className="text-3xl font-black text-slate-950">{item.word}</p>
                           <p className="mt-1 text-lg font-bold text-blue-600">{item.phonetic}</p>
                           <span className="mt-4 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">点卡片看中文和例句</span>
                         </>
@@ -598,7 +607,7 @@ export default function WordChallenge() {
                   return (
                     <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
                       <p className="text-lg font-black text-slate-950">{item.meaning}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">{item.example.replace(new RegExp(escapeRegExp(item.word), 'ig'), '____')}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">根据中文提示，拼写完整英文单词。</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSpellAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '') }))} placeholder="拼写完整单词" />
                         <button
@@ -619,7 +628,44 @@ export default function WordChallenge() {
                     </div>
                   )
                 })}
-                <button className="btn-primary bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!spellingDone || isSubmitting} onClick={handleComplete}>
+                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!spellingDone} onClick={() => setStage('sentence')}>
+                  进入例句填空
+                </button>
+              </section>
+            ) : null}
+
+            {stage === 'sentence' ? (
+              <section className="panel space-y-4">
+                {activeWords.map((item, index) => {
+                  const answer = sentenceAnswers[index] ?? ''
+                  const isPassed = sentencePassed.has(index)
+                  return (
+                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
+                      <p className="text-sm font-bold text-slate-500">根据例句，把挖掉的单词填回来</p>
+                      <p className="mt-2 text-lg font-black leading-8 text-slate-950">{blankExample(item.example, item.word)}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">中文提示：{item.meaning}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSentenceAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '') }))} placeholder="填入单词" />
+                        <button
+                          className="btn-secondary justify-center"
+                          type="button"
+                          onClick={() => {
+                            if (answer === cleanLetters(item.word)) {
+                              setSentencePassed((current) => new Set(current).add(index))
+                              setError('')
+                            } else {
+                              setError(`正确答案是 ${item.word}`)
+                            }
+                          }}
+                        >
+                          {isPassed ? <CheckCircle2 size={17} /> : null}
+                          检查
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <button className="btn-primary bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!sentenceDone || isSubmitting} onClick={handleComplete}>
                   {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
                 </button>
               </section>

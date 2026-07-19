@@ -95,3 +95,25 @@ student_point_records
 word_challenge_tasks
 word_challenge_completions
 ```
+
+## Import Word Challenge Tasks
+
+Prepare a CSV file with exactly 10 rows:
+
+```csv
+word,phonetic,meaning,example
+apple,/ˈæpəl/,苹果,I eat an apple.
+book,/bʊk/,书,I read a book.
+```
+
+Then run:
+
+```bash
+cd /var/www/henry_games
+ADMIN_USERNAME=bessie ADMIN_PASSWORD='你的管理员密码' \
+node scripts/import-word-challenge-task.mjs /tmp/today-words.csv \
+  --date "$(date +%F)" \
+  --title "今日英语单词闯关"
+```
+
+You can also import JSON with `taskDate`, `title`, and `words`.

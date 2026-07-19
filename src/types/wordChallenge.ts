@@ -1,7 +1,6 @@
 export type WordChallengeWord = {
   word: string
   phonetic: string
-  image: string
   meaning: string
   example: string
 }

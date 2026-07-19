@@ -20,7 +20,7 @@ app.use(express.json({ limit: '32kb' }))
 db.exec(require('node:fs').readFileSync(schemaPath, 'utf8'))
 
 const pointCategories = new Set(['math', 'english', 'english_challenge', 'reading', 'writing', 'housework', 'other'])
-const wordChallengeStageCount = 5
+const wordChallengeStageCount = 6
 
 function isValidGameType(value) {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value)
@@ -82,7 +82,6 @@ function normalizeWordChallengeWords(value) {
   const words = value.map((item) => ({
     word: normalizeText(item?.word, 40),
     phonetic: normalizeText(item?.phonetic, 40),
-    image: normalizeText(item?.image, 20),
     meaning: normalizeText(item?.meaning, 80),
     example: normalizeText(item?.example, 180),
   }))
@@ -97,12 +96,21 @@ function normalizeWordChallengeWords(value) {
   return words
 }
 
+function publicWordChallengeWords(value) {
+  return safeJsonParse(value, []).map((item) => ({
+    word: normalizeText(item?.word, 40),
+    phonetic: normalizeText(item?.phonetic, 40),
+    meaning: normalizeText(item?.meaning, 80),
+    example: normalizeText(item?.example, 180),
+  }))
+}
+
 function publicWordChallengeTask(row, completedTaskIds = new Set()) {
   return {
     id: row.id,
     taskDate: row.task_date,
     title: row.title,
-    words: safeJsonParse(row.words_json, []),
+    words: publicWordChallengeWords(row.words_json),
     createdByUserId: row.created_by_user_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
