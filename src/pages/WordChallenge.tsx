@@ -18,7 +18,7 @@ const stages: { id: Stage; name: string }[] = [
   { id: 'learn', name: '学新词' },
   { id: 'meaning', name: '选意思' },
   { id: 'order', name: '字母归位' },
-  { id: 'sky', name: '字母天空' },
+  { id: 'sky', name: '字母填空' },
   { id: 'spelling', name: '单词拼写' },
   { id: 'sentence', name: '例句填空' },
 ]
@@ -128,7 +128,9 @@ export default function WordChallenge() {
   const [orderAnswer, setOrderAnswer] = useState('')
   const [orderFeedback, setOrderFeedback] = useState('')
   const [orderPassed, setOrderPassed] = useState<Set<number>>(new Set())
+  const [skyIndex, setSkyIndex] = useState(0)
   const [skyAnswers, setSkyAnswers] = useState<Record<number, string>>({})
+  const [skyFeedback, setSkyFeedback] = useState('')
   const [skyPassed, setSkyPassed] = useState<Set<number>>(new Set())
   const [spellAnswers, setSpellAnswers] = useState<Record<number, string>>({})
   const [spellPassed, setSpellPassed] = useState<Set<number>>(new Set())
@@ -171,7 +173,9 @@ export default function WordChallenge() {
     setOrderAnswer('')
     setOrderFeedback('')
     setOrderPassed(new Set())
+    setSkyIndex(0)
     setSkyAnswers({})
+    setSkyFeedback('')
     setSkyPassed(new Set())
     setSpellAnswers({})
     setSpellPassed(new Set())
@@ -241,7 +245,6 @@ export default function WordChallenge() {
     }
   }
 
-  const skyDone = activeWords.length > 0 && skyPassed.size === activeWords.length
   const spellingDone = activeWords.length > 0 && spellPassed.size === activeWords.length
   const sentenceDone = activeWords.length > 0 && sentencePassed.size === activeWords.length
   const learnWord = activeWords[learnIndex]
@@ -249,6 +252,10 @@ export default function WordChallenge() {
   const meaningWord = activeWords[meaningIndex]
   const selectedMeaning = meaningAnswers[meaningIndex]
   const meaningCanContinue = Boolean(meaningWord && meaningHeardWords.has(meaningIndex) && selectedMeaning)
+  const skyWord = activeWords[skyIndex]
+  const skyLetters = cleanLetters(skyWord?.word ?? '')
+  const skyMissingPositions = missingPositions(skyWord?.word ?? '')
+  const skyAnswer = skyAnswers[skyIndex] ?? ''
 
   if (isLoading) {
     return (
@@ -670,42 +677,88 @@ export default function WordChallenge() {
             ) : null}
 
             {stage === 'sky' ? (
-              <section className="panel space-y-4">
-                {activeWords.map((item, index) => {
-                  const letters = cleanLetters(item.word)
-                  const positions = missingPositions(item.word)
-                  const answer = skyAnswers[index] ?? ''
-                  const isPassed = skyPassed.has(index)
-                  return (
-                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
-                      <p className="text-sm font-bold text-slate-500">{item.meaning}</p>
-                      <p className="mt-2 text-2xl font-black tracking-[0.2em] text-slate-950">
-                        {letters.split('').map((letter, letterIndex) => (positions.includes(letterIndex) ? '_' : letter)).join(' ')}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSkyAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(0, positions.length) }))} placeholder={`填写 ${positions.length} 个字母`} />
-                        <button
-                          className="btn-secondary justify-center"
-                          type="button"
-                          onClick={() => {
-                            const expected = positions.map((position) => letters[position]).join('')
-                            if (answer === expected) {
-                              setSkyPassed((current) => new Set(current).add(index))
-                            } else {
-                              setError(`正确答案是 ${item.word}`)
-                            }
-                          }}
-                        >
-                          {isPassed ? <CheckCircle2 size={17} /> : null}
-                          检查
-                        </button>
-                      </div>
+              <section className="panel text-center">
+                {skyWord ? (
+                  <div className="mx-auto max-w-3xl">
+                    <p className="text-sm font-black text-blue-600">第 {skyIndex + 1} / {activeWords.length} 个</p>
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">{skyWord.meaning}</h2>
+                    <p className="mt-2 text-sm font-bold text-slate-500">把缺失的字母直接填回单词空格里</p>
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-2 rounded-[34px] bg-blue-50 px-4 py-6">
+                      {skyLetters.split('').map((letter, letterIndex) => {
+                        const missingIndex = skyMissingPositions.indexOf(letterIndex)
+                        if (missingIndex === -1) {
+                          return (
+                            <span key={`${letter}-${letterIndex}`} className="grid h-14 min-w-12 place-items-center rounded-2xl bg-white px-3 text-3xl font-black text-slate-950 shadow-sm">
+                              {letter}
+                            </span>
+                          )
+                        }
+
+                        return (
+                          <input
+                            key={`${letter}-${letterIndex}`}
+                            aria-label={`填写第 ${letterIndex + 1} 个字母`}
+                            className="h-14 w-12 rounded-2xl border-2 border-blue-200 bg-white text-center text-3xl font-black lowercase text-blue-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            maxLength={1}
+                            value={skyAnswer[missingIndex]?.trim() ?? ''}
+                            onChange={(event) => {
+                              const nextLetter = event.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(-1)
+                              const currentSlots = Array.from({ length: skyMissingPositions.length }, (_, index) =>
+                                skyAnswer[index]?.trim() ? skyAnswer[index] : ' ',
+                              )
+                              currentSlots[missingIndex] = nextLetter || ' '
+                              setSkyFeedback('')
+                              setSkyAnswers((current) => ({ ...current, [skyIndex]: currentSlots.join('') }))
+                            }}
+                          />
+                        )
+                      })}
                     </div>
-                  )
-                })}
-                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!skyDone} onClick={() => setStage('spelling')}>
-                  进入单词拼写
-                </button>
+                    {skyFeedback ? (
+                      <div className="mx-auto mt-3 max-w-xl rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700">
+                        {skyFeedback}
+                      </div>
+                    ) : null}
+                    <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                      <button
+                        className="btn-secondary justify-center"
+                        type="button"
+                        onClick={() => {
+                          setSkyFeedback('')
+                          setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+                        }}
+                        disabled={!skyAnswer}
+                      >
+                        清空
+                      </button>
+                      <button
+                        className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
+                        type="button"
+                        onClick={() => {
+                          const expected = skyMissingPositions.map((position) => skyLetters[position]).join('')
+                          if (skyAnswer !== expected) {
+                            setSkyFeedback(`正确答案是 ${skyWord.word}，请重新填一次`)
+                            setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+                            return
+                          }
+
+                          setError('')
+                          setSkyFeedback('')
+                          setSkyPassed((current) => new Set(current).add(skyIndex))
+                          setSkyAnswers((current) => ({ ...current, [skyIndex]: '' }))
+                          if (skyIndex + 1 < activeWords.length) {
+                            setSkyIndex(skyIndex + 1)
+                          } else {
+                            setStage('spelling')
+                          }
+                        }}
+                      >
+                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入单词拼写'}
+                      </button>
+                    </div>
+                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {activeWords.length}</p>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
