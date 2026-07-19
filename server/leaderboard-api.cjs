@@ -20,7 +20,7 @@ app.use(express.json({ limit: '32kb' }))
 db.exec(require('node:fs').readFileSync(schemaPath, 'utf8'))
 
 const pointCategories = new Set(['math', 'english', 'english_challenge', 'reading', 'writing', 'housework', 'other'])
-const wordChallengeStageCount = 6
+const wordChallengeStageCount = 5
 
 function isValidGameType(value) {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value)

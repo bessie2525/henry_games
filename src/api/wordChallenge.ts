@@ -71,7 +71,7 @@ export function completeWordChallengeTask(token: string, taskId: number) {
     token,
     {
       method: 'POST',
-      body: JSON.stringify({ completedStages: 6 }),
+      body: JSON.stringify({ completedStages: 5 }),
     },
   )
 }

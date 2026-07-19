@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, CheckCircle2, LogIn, Pencil, Plus, RotateCcw, Save, Star, Volume2 } from 'lucide-react'
+import { Activity, LogIn, Pencil, Plus, RotateCcw, Save, Star, Volume2 } from 'lucide-react'
 import {
   completeWordChallengeTask,
   createWordChallengeTask,
@@ -12,14 +12,13 @@ import { useAuth } from '@/hooks/useAuth'
 import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge'
 
 type AuthMode = 'login' | 'register'
-type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'spelling' | 'sentence' | 'done'
+type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
 
 const stages: { id: Stage; name: string }[] = [
   { id: 'learn', name: '学新词' },
   { id: 'meaning', name: '选意思' },
   { id: 'order', name: '字母归位' },
   { id: 'sky', name: '字母填空' },
-  { id: 'spelling', name: '单词拼写' },
   { id: 'sentence', name: '例句填空' },
 ]
 
@@ -132,9 +131,10 @@ export default function WordChallenge() {
   const [skyAnswers, setSkyAnswers] = useState<Record<number, string>>({})
   const [skyFeedback, setSkyFeedback] = useState('')
   const [skyPassed, setSkyPassed] = useState<Set<number>>(new Set())
-  const [spellAnswers, setSpellAnswers] = useState<Record<number, string>>({})
-  const [spellPassed, setSpellPassed] = useState<Set<number>>(new Set())
+  const [sentenceIndex, setSentenceIndex] = useState(0)
   const [sentenceAnswers, setSentenceAnswers] = useState<Record<number, string>>({})
+  const [sentenceFeedback, setSentenceFeedback] = useState('')
+  const [visibleSentenceHints, setVisibleSentenceHints] = useState<Set<number>>(new Set())
   const [sentencePassed, setSentencePassed] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -177,9 +177,10 @@ export default function WordChallenge() {
     setSkyAnswers({})
     setSkyFeedback('')
     setSkyPassed(new Set())
-    setSpellAnswers({})
-    setSpellPassed(new Set())
+    setSentenceIndex(0)
     setSentenceAnswers({})
+    setSentenceFeedback('')
+    setVisibleSentenceHints(new Set())
     setSentencePassed(new Set())
     setMessage('')
     setError('')
@@ -245,7 +246,6 @@ export default function WordChallenge() {
     }
   }
 
-  const spellingDone = activeWords.length > 0 && spellPassed.size === activeWords.length
   const sentenceDone = activeWords.length > 0 && sentencePassed.size === activeWords.length
   const learnWord = activeWords[learnIndex]
   const learnCanContinue = Boolean(learnWord && heardWords.has(learnIndex) && flippedCards.has(learnIndex))
@@ -256,6 +256,9 @@ export default function WordChallenge() {
   const skyLetters = cleanLetters(skyWord?.word ?? '')
   const skyMissingPositions = missingPositions(skyWord?.word ?? '')
   const skyAnswer = skyAnswers[skyIndex] ?? ''
+  const sentenceWord = activeWords[sentenceIndex]
+  const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
+  const isSentenceHintVisible = visibleSentenceHints.has(sentenceIndex)
 
   if (isLoading) {
     return (
@@ -285,7 +288,7 @@ export default function WordChallenge() {
             <p className="text-5xl">🔤</p>
             <h2 className="mt-4 text-3xl font-black text-slate-950">请先登录后开始单词闯关</h2>
             <p className="mx-auto mt-4 max-w-2xl font-semibold leading-7 text-slate-600">
-              管理员发布每日 10 个单词任务，学生完成六个环节后自动获得 2 颗英语闯关星星。
+              管理员发布每日 10 个单词任务，学生完成五个环节后自动获得 2 颗英语闯关星星。
             </p>
             <button className="btn-primary mt-6 bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" onClick={() => setAuthMode('login')}>
               <LogIn size={18} />
@@ -433,7 +436,7 @@ export default function WordChallenge() {
                   重新开始
                 </button>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-6">
+              <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
                 {stages.map((item) => (
                   <button
                     key={item.id}
@@ -749,11 +752,11 @@ export default function WordChallenge() {
                           if (skyIndex + 1 < activeWords.length) {
                             setSkyIndex(skyIndex + 1)
                           } else {
-                            setStage('spelling')
+                            setStage('sentence')
                           }
                         }}
                       >
-                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入单词拼写'}
+                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入例句填空'}
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {activeWords.length}</p>
@@ -762,75 +765,92 @@ export default function WordChallenge() {
               </section>
             ) : null}
 
-            {stage === 'spelling' ? (
-              <section className="panel space-y-4">
-                {activeWords.map((item, index) => {
-                  const answer = spellAnswers[index] ?? ''
-                  const isPassed = spellPassed.has(index)
-                  return (
-                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
-                      <p className="text-lg font-black text-slate-950">{item.meaning}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">根据中文提示，拼写完整英文单词。</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSpellAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '') }))} placeholder="拼写完整单词" />
-                        <button
-                          className="btn-secondary justify-center"
-                          type="button"
-                          onClick={() => {
-                            if (answer === cleanLetters(item.word)) {
-                              setSpellPassed((current) => new Set(current).add(index))
-                            } else {
-                              setError(`正确答案是 ${item.word}`)
-                            }
-                          }}
-                        >
-                          {isPassed ? <CheckCircle2 size={17} /> : null}
-                          检查
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-                <button className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" disabled={!spellingDone} onClick={() => setStage('sentence')}>
-                  进入例句填空
-                </button>
-              </section>
-            ) : null}
-
             {stage === 'sentence' ? (
-              <section className="panel space-y-4">
-                {activeWords.map((item, index) => {
-                  const answer = sentenceAnswers[index] ?? ''
-                  const isPassed = sentencePassed.has(index)
-                  return (
-                    <div key={item.word} className="rounded-3xl bg-blue-50/70 p-4">
-                      <p className="text-sm font-bold text-slate-500">根据例句，把挖掉的单词填回来</p>
-                      <p className="mt-2 text-lg font-black leading-8 text-slate-950">{blankExample(item.example, item.word)}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">中文提示：{item.meaning}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <input className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-black" value={answer} onChange={(event) => setSentenceAnswers((current) => ({ ...current, [index]: event.target.value.toLowerCase().replace(/[^a-z]/g, '') }))} placeholder="填入单词" />
+              <section className="panel text-center">
+                {sentenceWord ? (
+                  <div className="mx-auto max-w-3xl">
+                    <p className="text-sm font-black text-blue-600">第 {sentenceIndex + 1} / {activeWords.length} 题</p>
+                    <div className="mt-4 rounded-[34px] bg-blue-50/80 p-5 text-left">
+                      <p className="text-sm font-black text-blue-700">根据例句，把挖掉的单词填回来</p>
+                      <p className="mt-3 text-3xl font-black leading-10 text-slate-950">{blankExample(sentenceWord.example, sentenceWord.word)}</p>
+                      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                        <input
+                          className="min-w-0 flex-1 rounded-2xl border border-blue-100 px-4 py-3 text-lg font-black lowercase outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                          value={sentenceAnswer}
+                          onChange={(event) => {
+                            setSentenceFeedback('')
+                            setSentenceAnswers((current) => ({
+                              ...current,
+                              [sentenceIndex]: event.target.value.toLowerCase().replace(/[^a-z]/g, ''),
+                            }))
+                          }}
+                          placeholder="填入单词"
+                        />
                         <button
                           className="btn-secondary justify-center"
                           type="button"
-                          onClick={() => {
-                            if (answer === cleanLetters(item.word)) {
-                              setSentencePassed((current) => new Set(current).add(index))
-                              setError('')
-                            } else {
-                              setError(`正确答案是 ${item.word}`)
-                            }
-                          }}
+                          onClick={() =>
+                            setVisibleSentenceHints((current) => {
+                              const next = new Set(current)
+                              next.add(sentenceIndex)
+                              return next
+                            })
+                          }
                         >
-                          {isPassed ? <CheckCircle2 size={17} /> : null}
-                          检查
+                          查看中文提示
                         </button>
                       </div>
+                      {isSentenceHintVisible ? (
+                        <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-black text-blue-800">
+                          中文提示：{sentenceWord.meaning}
+                        </div>
+                      ) : null}
+                      {sentenceFeedback ? (
+                        <div className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700">
+                          {sentenceFeedback}
+                        </div>
+                      ) : null}
                     </div>
-                  )
-                })}
-                <button className="btn-primary bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!sentenceDone || isSubmitting} onClick={handleComplete}>
-                  {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
-                </button>
+                    <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                      <button
+                        className="btn-secondary justify-center"
+                        type="button"
+                        onClick={() => {
+                          setSentenceFeedback('')
+                          setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
+                        }}
+                        disabled={!sentenceAnswer}
+                      >
+                        清空
+                      </button>
+                      <button
+                        className="btn-primary bg-blue-600 shadow-blue-200 hover:bg-blue-700"
+                        type="button"
+                        onClick={() => {
+                          if (sentenceAnswer !== cleanLetters(sentenceWord.word)) {
+                            setSentenceFeedback(`正确答案是 ${sentenceWord.word}，请重新填一次`)
+                            setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
+                            return
+                          }
+
+                          setError('')
+                          setSentenceFeedback('')
+                          setSentencePassed((current) => new Set(current).add(sentenceIndex))
+                          setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
+                          if (sentenceIndex + 1 < activeWords.length) {
+                            setSentenceIndex(sentenceIndex + 1)
+                          }
+                        }}
+                      >
+                        {sentenceIndex + 1 < activeWords.length ? '确认，进入下一题' : '确认'}
+                      </button>
+                    </div>
+                    <p className="mt-4 text-sm font-bold text-slate-500">已完成 {sentencePassed.size} / {activeWords.length}</p>
+                    <button className="btn-primary mt-5 bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={!sentenceDone || isSubmitting} onClick={handleComplete}>
+                      {isSubmitting ? '提交中...' : '完成闯关并领取 2 颗星'}
+                    </button>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
