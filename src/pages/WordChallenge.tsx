@@ -128,21 +128,45 @@ function missingPositions(word: string) {
   return [...positions].sort((a, b) => a - b)
 }
 
-function speakWord(word: string) {
-  if (!('speechSynthesis' in window)) {
+function pickSpeechVoice(voices: SpeechSynthesisVoice[]) {
+  return (
+    voices.find((voice) => voice.lang.toLowerCase() === 'en-us') ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('en-us')) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) ??
+    null
+  )
+}
+
+function speakWord(word: string, onError?: (message: string) => void) {
+  if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+    onError?.('当前浏览器不支持自动朗读，请换用 Safari 或 Chrome。')
     return
   }
 
-  window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(word)
   utterance.lang = 'en-US'
   utterance.rate = 0.85
-  const voices = window.speechSynthesis.getVoices()
-  const usVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith('en-us'))
-  if (usVoice) {
-    utterance.voice = usVoice
+  utterance.pitch = 1
+  utterance.volume = 1
+  const voice = pickSpeechVoice(window.speechSynthesis.getVoices())
+  if (voice) {
+    utterance.voice = voice
   }
-  window.speechSynthesis.speak(utterance)
+
+  utterance.onerror = () => {
+    onError?.('朗读没有成功播放。请确认手机未静音，并在 Safari 或 Chrome 中打开页面后再点一次朗读。')
+  }
+
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.resume()
+  window.setTimeout(() => {
+    try {
+      window.speechSynthesis.resume()
+      window.speechSynthesis.speak(utterance)
+    } catch {
+      onError?.('朗读没有成功播放。请确认手机浏览器允许网页播放声音。')
+    }
+  }, 80)
 }
 
 function validateWords(words: WordChallengeWord[]) {
@@ -208,6 +232,20 @@ export default function WordChallenge() {
   useEffect(() => {
     loadTasks().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '单词任务加载失败'))
   }, [loadTasks])
+
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) {
+      return
+    }
+
+    window.speechSynthesis.getVoices()
+    const handleVoicesChanged = () => {
+      window.speechSynthesis.getVoices()
+    }
+
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged)
+  }, [])
 
   const resetChallenge = () => {
     setStage('learn')
@@ -569,7 +607,8 @@ export default function WordChallenge() {
                         className="btn-secondary justify-center"
                         type="button"
                         onClick={() => {
-                          speakWord(learnWord.word)
+                          setError('')
+                          speakWord(learnWord.word, setError)
                           setHeardWords((current) => new Set(current).add(learnIndex))
                         }}
                       >
@@ -610,7 +649,8 @@ export default function WordChallenge() {
                         className="btn-secondary mx-auto mt-4 justify-center"
                         type="button"
                         onClick={() => {
-                          speakWord(meaningWord.word)
+                          setError('')
+                          speakWord(meaningWord.word, setError)
                           setMeaningHeardWords((current) => new Set(current).add(meaningIndex))
                         }}
                       >
