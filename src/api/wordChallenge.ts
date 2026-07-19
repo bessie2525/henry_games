@@ -73,7 +73,18 @@ export function deleteWordChallengeTask(token: string, taskId: number) {
 }
 
 export function completeWordChallengeTask(token: string, taskId: number) {
-  return requestJson<{ ok: true; alreadyCompleted: boolean; pointRecordId: number; awardedStars?: number }>(
+  return requestJson<{
+    ok: true
+    alreadyCompleted: boolean
+    pointRecordId: number
+    awardedStars?: number
+    bonusStars?: number
+    bonusPointRecordId?: number | null
+    totalAwardedStars?: number
+    streakDays?: number
+    streakMilestone?: number | null
+    isTodayTask?: boolean
+  }>(
     `/word-challenge/tasks/${taskId}/complete`,
     token,
     {

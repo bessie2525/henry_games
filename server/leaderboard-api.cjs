@@ -123,6 +123,40 @@ function publicWordChallengeTask(row, completedTaskIds = new Set(), completionSu
   }
 }
 
+function calculateWordChallengeStreak(studentUserId, endDate) {
+  const completedDates = new Set(
+    db
+      .prepare(
+        `
+        SELECT DISTINCT t.task_date AS taskDate
+        FROM word_challenge_completions c
+        JOIN word_challenge_tasks t ON t.id = c.task_id
+        WHERE c.student_user_id = ? AND t.task_date <= ?
+      `,
+      )
+      .all(studentUserId, endDate)
+      .map((row) => row.taskDate),
+  )
+
+  let streakDays = 0
+  const cursor = new Date(`${endDate}T00:00:00Z`)
+
+  while (completedDates.has(cursor.toISOString().slice(0, 10))) {
+    streakDays += 1
+    cursor.setUTCDate(cursor.getUTCDate() - 1)
+  }
+
+  return streakDays
+}
+
+function todayDateString() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function getStudentById(userId) {
   if (!Number.isInteger(userId)) {
     return null
@@ -912,10 +946,55 @@ app.post('/api/word-challenge/tasks/:id/complete', requireAuth, (req, res) => {
     `,
     ).run(taskId, req.user.id, req.user.username, pointResult.lastInsertRowid)
 
-    return pointResult.lastInsertRowid
+    const isTodayTask = task.task_date === todayDateString()
+    const streakDays = isTodayTask ? calculateWordChallengeStreak(req.user.id, task.task_date) : 0
+    const streakMilestone = streakDays > 0 && streakDays % 10 === 0 ? streakDays : null
+    let bonusStars = 0
+    let bonusPointRecordId = null
+
+    if (streakMilestone) {
+      const bonusDetail = `英语单词闯关连续打卡 ${streakMilestone} 天奖励`
+      const existingBonus = db
+        .prepare(
+          `
+          SELECT id
+          FROM student_point_records
+          WHERE student_user_id = ?
+            AND category = 'english_challenge'
+            AND record_date = ?
+            AND detail = ?
+        `,
+        )
+        .get(req.user.id, task.task_date, bonusDetail)
+
+      if (!existingBonus) {
+        const bonusResult = db
+          .prepare(
+            `
+            INSERT INTO student_point_records
+              (student_user_id, student_username, category, stars, record_date, detail, note, created_by_user_id)
+            VALUES
+              (?, ?, 'english_challenge', 1, ?, ?, ?, ?)
+          `,
+          )
+          .run(req.user.id, req.user.username, task.task_date, bonusDetail, '连续打卡里程碑，系统自动加星', req.user.id)
+        bonusStars = 1
+        bonusPointRecordId = bonusResult.lastInsertRowid
+      }
+    }
+
+    return {
+      pointRecordId: pointResult.lastInsertRowid,
+      awardedStars: 2,
+      bonusStars,
+      bonusPointRecordId,
+      streakDays,
+      streakMilestone,
+      isTodayTask,
+    }
   })()
 
-  res.json({ ok: true, alreadyCompleted: false, pointRecordId: result, awardedStars: 2 })
+  res.json({ ok: true, alreadyCompleted: false, totalAwardedStars: result.awardedStars + result.bonusStars, ...result })
 })
 
 app.listen(port, host, () => {

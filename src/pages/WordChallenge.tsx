@@ -15,6 +15,12 @@ import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge
 type AuthMode = 'login' | 'register' | 'account'
 type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
 type ChallengeStage = Exclude<Stage, 'done'>
+type StreakReward = {
+  streakDays: number
+  bonusStars: number
+  streakMilestone: number | null
+  totalAwardedStars: number
+}
 const minWordChallengeWords = 2
 const maxWordChallengeWords = 100
 
@@ -313,6 +319,7 @@ export default function WordChallenge() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAutoReading, setIsAutoReading] = useState(false)
+  const [streakReward, setStreakReward] = useState<StreakReward | null>(null)
   const isAdmin = user?.role === 'admin'
 
   const selectedTask = useMemo(
@@ -397,6 +404,7 @@ export default function WordChallenge() {
     setMessage('')
     setError('')
     setIsAutoReading(false)
+    setStreakReward(null)
   }
 
   useEffect(() => {
@@ -457,7 +465,23 @@ export default function WordChallenge() {
     try {
       setIsSubmitting(true)
       const response = await completeWordChallengeTask(token, selectedTask.id)
-      setMessage(response.alreadyCompleted ? '这个任务之前已经完成过，积分不会重复增加' : '闯关完成，已自动增加 2 颗英语闯关星星')
+      const bonusStars = response.bonusStars ?? 0
+      const totalAwardedStars = response.totalAwardedStars ?? response.awardedStars ?? 2
+      setMessage(
+        response.alreadyCompleted
+          ? '这个任务之前已经完成过，积分不会重复增加'
+          : bonusStars > 0
+            ? `闯关完成，已自动增加 ${totalAwardedStars} 颗英语闯关星星`
+            : '闯关完成，已自动增加 2 颗英语闯关星星',
+      )
+      if (!response.alreadyCompleted && response.isTodayTask) {
+        setStreakReward({
+          streakDays: response.streakDays ?? 1,
+          bonusStars,
+          streakMilestone: response.streakMilestone ?? null,
+          totalAwardedStars,
+        })
+      }
       setStage('done')
       await loadTasks()
     } catch (submitError) {
@@ -1387,6 +1411,33 @@ export default function WordChallenge() {
           </section>
         ) : null}
       </div>
+      {streakReward ? (
+        <div className="fixed inset-0 z-[900] grid place-items-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[34px] border border-amber-100 bg-white p-6 text-center shadow-2xl shadow-slate-950/20 sm:p-8">
+            <p className="text-5xl">🌟</p>
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-amber-600">Daily Streak</p>
+            <h2 className="mt-2 text-3xl font-black text-slate-950">连续打卡 {streakReward.streakDays} 天</h2>
+            {streakReward.bonusStars > 0 && streakReward.streakMilestone ? (
+              <div className="mt-5 rounded-3xl bg-amber-50 px-5 py-4 text-left">
+                <p className="text-lg font-black text-amber-900">
+                  达成连续打卡 {streakReward.streakMilestone} 天，额外获得 {streakReward.bonusStars} 颗星！
+                </p>
+                <p className="mt-2 text-sm font-bold text-amber-700">
+                  本次闯关共获得 {streakReward.totalAwardedStars} 颗英语闯关星星。
+                </p>
+              </div>
+            ) : (
+              <div className="mt-5 rounded-3xl bg-blue-50 px-5 py-4 text-left">
+                <p className="text-base font-black text-blue-900">继续保持，每连续打卡 10 天会额外获得 1 颗星。</p>
+                <p className="mt-2 text-sm font-bold text-blue-700">本次闯关获得 2 颗英语闯关星星。</p>
+              </div>
+            )}
+            <button className="btn-primary mt-6 w-full justify-center bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" onClick={() => setStreakReward(null)}>
+              知道了
+            </button>
+          </div>
+        </div>
+      ) : null}
       {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
     </main>
   )
