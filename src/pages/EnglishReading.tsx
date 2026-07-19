@@ -433,7 +433,7 @@ export default function EnglishReading() {
                     </label>
                   </div>
                   <p className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-bold leading-5 text-orange-800">
-                    CSV 接口：POST /api/english-reading/tasks/import-csv，列名包括 taskDate,title,level,summary,paragraphs,vocabulary,q1Prompt,q1Options,q1Answer,q1Explanation,q1Hint。段落用 || 分隔，生词用 word|phonetic|meaning|example，多个生词用 ;; 分隔。
+                    批量上传建议使用 JSON 文件：把任务写入 reading/YYYY-MM-DD.json，然后执行 ADMIN_PASSWORD='管理员密码' ./reading/add_reading.sh YYYY-MM-DD。可参考 reading/sample-reading-task.json。
                   </p>
                   <button className="btn-primary bg-orange-600 shadow-orange-200 hover:bg-orange-700" type="submit" disabled={isSubmitting}>
                     {isSubmitting ? '保存中...' : editingTaskId ? '保存修改' : '发布任务'}

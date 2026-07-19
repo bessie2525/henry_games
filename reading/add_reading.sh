@@ -2,17 +2,24 @@
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
-  echo "Usage: ADMIN_PASSWORD='your-password' ./add_reading.sh YYYY-MM-DD"
+  echo "Usage:"
+  echo "  ADMIN_PASSWORD='your-password' ./add_reading.sh YYYY-MM-DD"
+  echo "  ADMIN_PASSWORD='your-password' ./add_reading.sh ./path/to/task.json"
   exit 1
 fi
 
-TASK_DATE="$1"
+TASK_INPUT="$1"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-INPUT_FILE="${SCRIPT_DIR}/${TASK_DATE}.csv"
+
+if [[ "${TASK_INPUT}" == *.json ]]; then
+  INPUT_FILE="${TASK_INPUT}"
+else
+  INPUT_FILE="${SCRIPT_DIR}/${TASK_INPUT}.json"
+fi
 
 if [ ! -f "${INPUT_FILE}" ]; then
-  echo "CSV file not found: ${INPUT_FILE}"
+  echo "JSON file not found: ${INPUT_FILE}"
   exit 1
 fi
 

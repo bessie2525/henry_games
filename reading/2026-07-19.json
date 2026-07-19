@@ -1,0 +1,99 @@
+{
+  "taskDate": "2026-07-19",
+  "title": "The New Club",
+  "level": "KET+ / PET Foundation",
+  "summary": "A boy joins a new school club and learns how to be brave, helpful, and part of a team.",
+  "paragraphs": [
+    "On Monday afternoon, Max saw a notice on the school board. It said, “Join the Green Club! Help our school become cleaner and learn about nature.” Max liked science, but he was not sure about joining. Most of his friends played football after school, and he did not want to be the only new person in the club.",
+    "At lunch time, his science teacher, Mrs Lane, asked Max if he had seen the notice. “You asked excellent questions about plants last week,” she said. “The club is planning a small garden behind the library. We need someone who can observe carefully.” Max felt pleased, but he still felt nervous. He promised to think about it.",
+    "After school, Max walked to the library garden. Three students were already there. A girl called Emma was drawing a plan, while two boys were carrying old boxes for the soil. When Emma saw Max, she smiled and asked, “Could you help us choose a sunny place for the tomatoes?” Max looked around and noticed that one corner got more sunlight than the rest of the garden.",
+    "The group listened to Max’s idea and agreed to use that corner. For the next hour, they worked together. Max measured the space, Emma wrote down the plan, and the others cleaned the ground. By the time he went home, Max’s shoes were dirty, but he felt proud. He had not only joined a club; he had helped the team make an important decision.",
+    "On Friday, the head teacher visited the garden and praised the students. Max’s friends came to look too. “This is actually cool,” one of them said. Max smiled. He realised that trying something new can feel difficult at first, but it can also lead to new friends and surprising opportunities."
+  ],
+  "vocabulary": [
+    {
+      "word": "notice",
+      "phonetic": "/ˈnoʊtɪs/",
+      "meaning": "通知，告示",
+      "example": "There is a notice about the school trip on the wall."
+    },
+    {
+      "word": "observe",
+      "phonetic": "/əbˈzɝːv/",
+      "meaning": "观察",
+      "example": "Good scientists observe small changes carefully."
+    },
+    {
+      "word": "nervous",
+      "phonetic": "/ˈnɝːvəs/",
+      "meaning": "紧张的",
+      "example": "I felt nervous before speaking in front of the class."
+    },
+    {
+      "word": "soil",
+      "phonetic": "/sɔɪl/",
+      "meaning": "土壤",
+      "example": "Plants need good soil, water, and sunlight."
+    },
+    {
+      "word": "measured",
+      "phonetic": "/ˈmeʒərd/",
+      "meaning": "测量了",
+      "example": "We measured the table before buying a new cloth."
+    },
+    {
+      "word": "praised",
+      "phonetic": "/preɪzd/",
+      "meaning": "表扬了",
+      "example": "The teacher praised Tom for his careful homework."
+    },
+    {
+      "word": "opportunities",
+      "phonetic": "/ˌɑːpərˈtuːnətiz/",
+      "meaning": "机会",
+      "example": "Learning English gives you more opportunities in the future."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Why was Max unsure about joining the Green Club at first?",
+      "options": ["He did not like science", "He thought the club was too expensive", "His friends played football after school", "Mrs Lane told him not to join"],
+      "answer": "His friends played football after school",
+      "explanation": "第一段说 Max 的大多数朋友放学后踢足球，而且他不想成为俱乐部里唯一的新成员，所以一开始不确定要不要参加。",
+      "paragraphHint": "回到第 1 段，找 Most of his friends played football after school。"
+    },
+    {
+      "id": "q2",
+      "prompt": "What did Mrs Lane say the club needed?",
+      "options": ["Someone who could cook lunch", "Someone who could observe carefully", "Someone who could play football well", "Someone who could paint the library"],
+      "answer": "Someone who could observe carefully",
+      "explanation": "第二段 Mrs Lane 说 We need someone who can observe carefully，说明俱乐部需要一个会仔细观察的人。",
+      "paragraphHint": "回到第 2 段，找 Mrs Lane 对 Max 说的话。"
+    },
+    {
+      "id": "q3",
+      "prompt": "How did Max help the group in the garden?",
+      "options": ["He chose a sunny place for the tomatoes", "He bought new footballs", "He wrote a letter to his friends", "He asked the head teacher to leave"],
+      "answer": "He chose a sunny place for the tomatoes",
+      "explanation": "第三段 Max 注意到一个角落阳光更多，第四段大家同意用那个角落，所以他帮助小组选了适合种番茄的位置。",
+      "paragraphHint": "回到第 3 段和第 4 段，找 sunny place 和 agreed to use that corner。"
+    },
+    {
+      "id": "q4",
+      "prompt": "How did Max feel when he went home after the first club meeting?",
+      "options": ["Angry and bored", "Proud but tired", "Lonely and sad", "Worried about football"],
+      "answer": "Proud but tired",
+      "explanation": "第四段说 Max 的鞋子脏了，说明他干了活；同时 felt proud，说明他很自豪。",
+      "paragraphHint": "回到第 4 段，找 his shoes were dirty 和 felt proud。"
+    },
+    {
+      "id": "q5",
+      "prompt": "What is the best message of the story?",
+      "options": ["It is better to avoid new activities", "Football is more useful than science", "Trying something new can bring good surprises", "Gardens should always be behind libraries"],
+      "answer": "Trying something new can bring good surprises",
+      "explanation": "最后一段 Max 意识到尝试新事情一开始可能困难，但会带来新朋友和意想不到的机会，这是文章主旨。",
+      "paragraphHint": "回到最后一段，找 realised 后面的总结句。"
+    }
+  ]
+}

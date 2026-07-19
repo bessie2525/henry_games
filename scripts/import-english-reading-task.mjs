@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs'
-import { extname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:3001/api'
 const adminUsername = process.env.ADMIN_USERNAME
@@ -10,26 +10,14 @@ const adminToken = process.env.ADMIN_TOKEN
 function printUsage() {
   console.log(`
 Usage:
-  ADMIN_USERNAME=bessie ADMIN_PASSWORD='your-password' node scripts/import-english-reading-task.mjs ./reading.csv
   ADMIN_TOKEN='jwt-token' node scripts/import-english-reading-task.mjs ./reading.json
+  ADMIN_USERNAME=bessie ADMIN_PASSWORD='your-password' node scripts/import-english-reading-task.mjs ./reading/2026-07-20.json
 
 Environment:
   API_BASE_URL       API base URL. Default: http://127.0.0.1:3001/api
   ADMIN_USERNAME    Admin username, used with ADMIN_PASSWORD
   ADMIN_PASSWORD    Admin password
   ADMIN_TOKEN       Optional existing admin JWT token
-
-Input CSV columns:
-  taskDate,title,level,summary,paragraphs,vocabulary,q1Prompt,q1Options,q1Answer,q1Explanation,q1Hint,q2Prompt,...
-
-CSV field format:
-  paragraphs   Separate paragraphs with ||
-  vocabulary   word|phonetic|meaning|example;;word|phonetic|meaning|example
-  qNOptions    Separate options with |
-
-Example:
-  taskDate,title,level,summary,paragraphs,vocabulary,q1Prompt,q1Options,q1Answer,q1Explanation,q1Hint
-  2026-07-20,The Clever Fox,入门,A fox helps a friend.,A fox walked in the forest.||He saw a lost bird.,forest|/ˈfɔːrɪst/|森林|The forest is quiet.,Where did the fox walk?,In the forest|In the kitchen|In a car,In the forest,原文说 fox walked in the forest.,回到第 1 段找 forest。
 
 Input JSON:
   {
@@ -55,107 +43,8 @@ Input JSON:
 `)
 }
 
-function parseCsvLine(line) {
-  const values = []
-  let current = ''
-  let inQuotes = false
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index]
-    const nextChar = line[index + 1]
-
-    if (char === '"' && inQuotes && nextChar === '"') {
-      current += '"'
-      index += 1
-      continue
-    }
-
-    if (char === '"') {
-      inQuotes = !inQuotes
-      continue
-    }
-
-    if (char === ',' && !inQuotes) {
-      values.push(current.trim())
-      current = ''
-      continue
-    }
-
-    current += char
-  }
-
-  values.push(current.trim())
-  return values
-}
-
-function parseCsv(content) {
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  if (lines.length < 2) {
-    return []
-  }
-
-  const headers = parseCsvLine(lines[0])
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line)
-    return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']))
-  })
-}
-
-function taskFromCsvRow(row) {
-  const vocabulary = String(row.vocabulary || '')
-    .split(';;')
-    .map((entry) => {
-      const [word, phonetic, meaning, example] = entry.split('|').map((item) => item?.trim() || '')
-      return { word, phonetic, meaning, example }
-    })
-    .filter((item) => item.word || item.meaning || item.example)
-
-  const questions = []
-  for (let index = 1; index <= 8; index += 1) {
-    const prompt = row[`q${index}Prompt`]
-    if (!prompt) {
-      continue
-    }
-
-    questions.push({
-      id: `q${index}`,
-      prompt,
-      options: String(row[`q${index}Options`] || '')
-        .split('|')
-        .map((option) => option.trim())
-        .filter(Boolean),
-      answer: row[`q${index}Answer`],
-      explanation: row[`q${index}Explanation`],
-      paragraphHint: row[`q${index}Hint`],
-    })
-  }
-
-  return {
-    taskDate: row.taskDate,
-    title: row.title,
-    level: row.level,
-    summary: row.summary,
-    paragraphs: String(row.paragraphs || '')
-      .split('||')
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean),
-    vocabulary,
-    questions,
-  }
-}
-
 function loadTasks(inputPath) {
   const content = readFileSync(inputPath, 'utf8')
-  const extension = extname(inputPath).toLowerCase()
-
-  if (extension === '.csv') {
-    return parseCsv(content).map(taskFromCsvRow)
-  }
-
   const parsed = JSON.parse(content)
   return Array.isArray(parsed) ? parsed : [parsed]
 }
@@ -188,7 +77,7 @@ async function requestJson(path, token, init) {
 
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(body?.error || `API failed: ${response.status}`)
+    throw new Error(body?.error || `API failed: ${init?.method || 'GET'} ${path} -> ${response.status}`)
   }
 
   return body

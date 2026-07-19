@@ -1,0 +1,72 @@
+{
+  "taskDate": "2026-07-20",
+  "title": "The Clever Fox",
+  "level": "入门",
+  "summary": "A little fox helps a lost bird find the way home.",
+  "paragraphs": [
+    "One sunny morning, a little fox walked through the forest. The air was cool, and birds were singing in the trees.",
+    "Near a big stone, the fox heard a soft cry. A young bird was sitting on the ground. It looked worried because it could not find its nest.",
+    "The fox looked up carefully. He saw a nest in a tall tree beside the river. He called the mother bird, and she flew down quickly.",
+    "The young bird was safe again. The mother bird thanked the fox, and the fox smiled. He learned that being clever is good, but being kind is even better."
+  ],
+  "vocabulary": [
+    {
+      "word": "forest",
+      "phonetic": "/ˈfɔːrɪst/",
+      "meaning": "森林",
+      "example": "The forest is quiet in the morning."
+    },
+    {
+      "word": "worried",
+      "phonetic": "/ˈwɝːid/",
+      "meaning": "担心的",
+      "example": "She felt worried before the test."
+    },
+    {
+      "word": "nest",
+      "phonetic": "/nest/",
+      "meaning": "鸟巢",
+      "example": "The bird built a nest in the tree."
+    },
+    {
+      "word": "kind",
+      "phonetic": "/kaɪnd/",
+      "meaning": "善良的",
+      "example": "It is kind to help a friend."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Where did the little fox walk?",
+      "options": ["Through the forest", "Across a busy street", "Inside a school", "Under a bridge"],
+      "answer": "Through the forest",
+      "explanation": "第一段说 the little fox walked through the forest，所以答案是森林里。",
+      "paragraphHint": "回到第 1 段，找 walked through the forest。"
+    },
+    {
+      "id": "q2",
+      "prompt": "Why was the young bird worried?",
+      "options": ["It was hungry", "It could not find its nest", "It lost a toy", "It did not like the fox"],
+      "answer": "It could not find its nest",
+      "explanation": "第二段说小鸟 looked worried because it could not find its nest。",
+      "paragraphHint": "回到第 2 段，找 because 后面的原因。"
+    },
+    {
+      "id": "q3",
+      "prompt": "How did the fox help the bird?",
+      "options": ["He found the nest and called the mother bird", "He gave the bird a book", "He carried the bird to school", "He hid behind the stone"],
+      "answer": "He found the nest and called the mother bird",
+      "explanation": "第三段说狐狸看到了树上的鸟巢，并叫来了鸟妈妈。",
+      "paragraphHint": "回到第 3 段，找 saw a nest 和 called the mother bird。"
+    },
+    {
+      "id": "q4",
+      "prompt": "What is the main idea of the story?",
+      "options": ["Kindness is important", "Forests are always cold", "Birds cannot sing", "Foxes do not help others"],
+      "answer": "Kindness is important",
+      "explanation": "故事最后说 being clever is good, but being kind is even better，说明善良很重要。",
+      "paragraphHint": "回到最后一段，看故事总结的句子。"
+    }
+  ]
+}
