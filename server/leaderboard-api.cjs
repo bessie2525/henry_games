@@ -13,6 +13,8 @@ const schemaPath = path.join(__dirname, 'sqlite', 'leaderboard_schema.sql')
 const jwtSecret = process.env.JWT_SECRET || 'henry-games-dev-secret-change-me'
 const tokenExpiresIn = process.env.JWT_EXPIRES_IN || '7d'
 const db = new Database(dbPath)
+const minWordChallengeWords = 2
+const maxWordChallengeWords = 100
 
 app.use(cors())
 app.use(express.json({ limit: '32kb' }))
@@ -86,7 +88,8 @@ function normalizeWordChallengeWords(value) {
   }))
 
   if (
-    words.length !== 10 ||
+    words.length < minWordChallengeWords ||
+    words.length > maxWordChallengeWords ||
     words.some((item) => !item.word || !item.meaning || !item.example || !/^[A-Za-z][A-Za-z\s'-]*$/.test(item.word))
   ) {
     return null

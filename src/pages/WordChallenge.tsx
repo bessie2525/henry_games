@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, LogIn, Pencil, Plus, RotateCcw, Save, Star, Volume2 } from 'lucide-react'
+import { Activity, LogIn, Pencil, Plus, RotateCcw, Save, Star, Trash2, Volume2 } from 'lucide-react'
 import {
   completeWordChallengeTask,
   createWordChallengeTask,
@@ -14,6 +14,8 @@ import type { WordChallengeTask, WordChallengeWord } from '@/types/wordChallenge
 type AuthMode = 'login' | 'register'
 type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
 type ChallengeStage = Exclude<Stage, 'done'>
+const minWordChallengeWords = 2
+const maxWordChallengeWords = 100
 
 const stages: { id: ChallengeStage; name: string }[] = [
   { id: 'learn', name: '学新词' },
@@ -27,13 +29,17 @@ function todayString() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function emptyWords(): WordChallengeWord[] {
-  return Array.from({ length: 10 }, () => ({
+function emptyWord(): WordChallengeWord {
+  return {
     word: '',
     phonetic: '',
     meaning: '',
     example: '',
-  }))
+  }
+}
+
+function emptyWords(): WordChallengeWord[] {
+  return Array.from({ length: 10 }, emptyWord)
 }
 
 function shuffleIndexes(length: number) {
@@ -232,7 +238,11 @@ async function speakWord(word: string, onError?: (message: string) => void) {
 }
 
 function validateWords(words: WordChallengeWord[]) {
-  return words.length === 10 && words.every((item) => item.word.trim() && item.meaning.trim() && item.example.trim())
+  return (
+    words.length >= minWordChallengeWords &&
+    words.length <= maxWordChallengeWords &&
+    words.every((item) => item.word.trim() && item.meaning.trim() && item.example.trim())
+  )
 }
 
 export default function WordChallenge() {
@@ -345,6 +355,14 @@ export default function WordChallenge() {
     setWords((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)))
   }
 
+  const addWord = () => {
+    setWords((current) => (current.length >= maxWordChallengeWords ? current : [...current, emptyWord()]))
+  }
+
+  const removeWord = (index: number) => {
+    setWords((current) => (current.length <= minWordChallengeWords ? current : current.filter((_, itemIndex) => itemIndex !== index)))
+  }
+
   const handleSaveTask = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
@@ -356,7 +374,7 @@ export default function WordChallenge() {
     }
 
     if (!validateWords(words)) {
-      setError('请填写 10 个单词，每个单词至少包含英文、中文和例句')
+      setError(`请填写 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词，每个单词至少包含英文、中文和例句`)
       return
     }
 
@@ -534,7 +552,7 @@ export default function WordChallenge() {
             <p className="text-5xl">🔤</p>
             <h2 className="mt-4 text-3xl font-black text-slate-950">请先登录后开始单词闯关</h2>
             <p className="mx-auto mt-4 max-w-2xl font-semibold leading-7 text-slate-600">
-              管理员发布每日 10 个单词任务，学生完成五个环节后自动获得 2 颗英语闯关星星。
+              管理员发布每日 2-100 个单词任务，学生完成五个环节后自动获得 2 颗英语闯关星星。
             </p>
             <button className="btn-primary mt-6 bg-blue-600 shadow-blue-200 hover:bg-blue-700" type="button" onClick={() => setAuthMode('login')}>
               <LogIn size={18} />
@@ -614,13 +632,31 @@ export default function WordChallenge() {
                 </label>
               </div>
 
-              <div className="grid gap-3">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-black text-blue-700">
+                    当前 {words.length} 个单词，可填写 {minWordChallengeWords}-{maxWordChallengeWords} 个
+                  </p>
+                  <button className="btn-secondary justify-center" type="button" onClick={addWord} disabled={words.length >= maxWordChallengeWords}>
+                    <Plus size={17} />
+                    添加单词
+                  </button>
+                </div>
                 {words.map((item, index) => (
-                  <div key={index} className="grid gap-2 rounded-3xl bg-blue-50/70 p-3 md:grid-cols-[1fr_1fr_1.2fr_2fr]">
+                  <div key={index} className="grid gap-2 rounded-3xl bg-blue-50/70 p-3 md:grid-cols-[1fr_1fr_1.2fr_2fr_auto]">
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.word} onChange={(event) => updateWord(index, { word: event.target.value })} placeholder={`单词 ${index + 1}`} />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.phonetic} onChange={(event) => updateWord(index, { phonetic: event.target.value })} placeholder="音标" />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.meaning} onChange={(event) => updateWord(index, { meaning: event.target.value })} placeholder="中文" />
                     <input className="rounded-2xl border border-blue-100 px-3 py-2 text-sm font-bold" value={item.example} onChange={(event) => updateWord(index, { example: event.target.value })} placeholder="英文例句" />
+                    <button
+                      className="grid h-10 w-10 place-items-center rounded-2xl border border-blue-100 bg-white text-slate-500 transition hover:border-rose-200 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      type="button"
+                      aria-label={`删除第 ${index + 1} 个单词`}
+                      onClick={() => removeWord(index)}
+                      disabled={words.length <= minWordChallengeWords}
+                    >
+                      <Trash2 size={17} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -666,7 +702,7 @@ export default function WordChallenge() {
           <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
             <p className="text-5xl">📘</p>
             <h2 className="mt-4 text-2xl font-black text-slate-950">{isAdmin ? '还没有单词任务' : '今天还没有单词任务'}</h2>
-            <p className="mt-3 font-semibold text-slate-500">{isAdmin ? '请先发布一个包含 10 个单词的任务。' : '等待管理员发布后，这里会自动显示。'}</p>
+            <p className="mt-3 font-semibold text-slate-500">{isAdmin ? `请先发布一个包含 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词的任务。` : '等待管理员发布后，这里会自动显示。'}</p>
           </section>
         ) : (
           <section className="space-y-4 sm:space-y-5">

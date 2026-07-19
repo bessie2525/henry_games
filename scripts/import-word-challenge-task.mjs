@@ -6,6 +6,8 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:3001/api'
 const adminUsername = process.env.ADMIN_USERNAME
 const adminPassword = process.env.ADMIN_PASSWORD
 const adminToken = process.env.ADMIN_TOKEN
+const minWordChallengeWords = 2
+const maxWordChallengeWords = 100
 
 function todayString() {
   const now = new Date()
@@ -134,8 +136,8 @@ function validateTask(task) {
     throw new Error('taskDate must use YYYY-MM-DD format')
   }
 
-  if (!Array.isArray(task.words) || task.words.length !== 10) {
-    throw new Error(`word challenge task must include exactly 10 words, got ${task.words?.length || 0}`)
+  if (!Array.isArray(task.words) || task.words.length < minWordChallengeWords || task.words.length > maxWordChallengeWords) {
+    throw new Error(`word challenge task must include ${minWordChallengeWords}-${maxWordChallengeWords} words, got ${task.words?.length || 0}`)
   }
 
   const invalidIndex = task.words.findIndex((item) => !item.word || !item.meaning || !item.example)

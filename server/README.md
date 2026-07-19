@@ -98,7 +98,7 @@ word_challenge_completions
 
 ## Import Word Challenge Tasks
 
-Prepare a CSV file with exactly 10 rows:
+Prepare a CSV file with 2-100 rows:
 
 ```csv
 word,phonetic,meaning,example
