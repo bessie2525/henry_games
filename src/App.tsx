@@ -33,6 +33,7 @@ export default function App() {
             <Route path="/cognitive-games" element={<CognitiveGames />} />
             <Route path="/points" element={<Points />} />
             <Route path="/word-challenge" element={<WordChallenge />} />
+            <Route path="/word-challenge/tasks/:taskId" element={<WordChallenge />} />
             <Route path="/games/chimp-test" element={<ChimpTestGame />} />
             <Route path="/games/number-memory" element={<NumberMemoryGame />} />
             <Route path="/games/sequential-memory" element={<SequentialMemoryGame />} />

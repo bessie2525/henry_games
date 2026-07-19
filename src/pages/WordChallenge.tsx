@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, LogIn, Pencil, Plus, RotateCcw, Save, Settings, Star, Trash2, Volume2 } from 'lucide-react'
 import {
   completeWordChallengeTask,
@@ -276,9 +276,14 @@ function validateWords(words: WordChallengeWord[]) {
 
 export default function WordChallenge() {
   const { user, token, isLoading } = useAuth()
+  const navigate = useNavigate()
+  const { taskId } = useParams()
+  const routeTaskId = taskId ? Number(taskId) : null
+  const isTaskPage = Number.isInteger(routeTaskId)
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
   const [tasks, setTasks] = useState<WordChallengeTask[]>([])
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(isTaskPage ? routeTaskId : null)
+  const [showOnlyIncompleteTasks, setShowOnlyIncompleteTasks] = useState(true)
   const [taskDate, setTaskDate] = useState(todayString())
   const [title, setTitle] = useState('每日英语单词闯关')
   const [words, setWords] = useState<WordChallengeWord[]>(emptyWords)
@@ -314,12 +319,20 @@ export default function WordChallenge() {
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks],
   )
+  const visibleTasks = useMemo(
+    () => (isAdmin || !showOnlyIncompleteTasks ? tasks : tasks.filter((task) => !task.isCompleted)),
+    [isAdmin, showOnlyIncompleteTasks, tasks],
+  )
   const activeWords = selectedTask?.words ?? []
   const learnWords = useMemo(() => wordsInOrder(activeWords, wordOrders.learn), [activeWords, wordOrders.learn])
   const meaningWords = useMemo(() => wordsInOrder(activeWords, wordOrders.meaning), [activeWords, wordOrders.meaning])
   const skyWords = useMemo(() => wordsInOrder(activeWords, wordOrders.sky), [activeWords, wordOrders.sky])
   const orderWords = useMemo(() => wordsInOrder(activeWords, wordOrders.order), [activeWords, wordOrders.order])
   const sentenceWords = useMemo(() => wordsInOrder(activeWords, wordOrders.sentence), [activeWords, wordOrders.sentence])
+
+  useEffect(() => {
+    setSelectedTaskId(isTaskPage ? Number(routeTaskId) : null)
+  }, [isTaskPage, routeTaskId])
 
   const loadTasks = useCallback(async () => {
     if (!token || !user) {
@@ -329,13 +342,17 @@ export default function WordChallenge() {
     const response = await fetchWordChallengeTasks(token)
     setTasks(response.tasks)
     setSelectedTaskId((current) => {
+      if (isTaskPage) {
+        return response.tasks.some((task) => task.id === routeTaskId) ? routeTaskId : null
+      }
+
       if (current && response.tasks.some((task) => task.id === current)) {
         return current
       }
 
-      return isAdmin ? response.tasks[0]?.id ?? null : null
+      return null
     })
-  }, [isAdmin, token, user])
+  }, [isTaskPage, routeTaskId, token, user])
 
   useEffect(() => {
     loadTasks().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '单词任务加载失败'))
@@ -665,7 +682,7 @@ export default function WordChallenge() {
         {error ? <div className="rounded-3xl bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">{error}</div> : null}
         {message ? <div className="rounded-3xl bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">{message}</div> : null}
 
-        {isAdmin ? (
+        {isAdmin && !isTaskPage ? (
           <section className="panel space-y-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -745,19 +762,36 @@ export default function WordChallenge() {
           </section>
         ) : null}
 
-        {tasks.length > 0 ? (
+        {!isTaskPage && tasks.length > 0 ? (
           <section className="rounded-[30px] border border-white/80 bg-white/85 p-4 shadow-sm shadow-blue-100">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Tasks</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">{isAdmin ? '任务管理与完成情况' : '每日单词任务'}</h2>
               </div>
-              <p className="text-xs font-bold text-slate-500">
-                {isAdmin ? '可编辑今天、历史和未来任务' : '只显示今天及以前的任务'}
-              </p>
+              {isAdmin ? (
+                <p className="text-xs font-bold text-slate-500">可编辑今天、历史和未来任务</p>
+              ) : (
+                <div className="flex rounded-full bg-blue-50 p-1 text-xs font-black text-blue-800">
+                  <button
+                    className={`rounded-full px-3 py-1.5 transition ${showOnlyIncompleteTasks ? 'bg-blue-600 text-white shadow-sm shadow-blue-100' : 'text-blue-700'}`}
+                    type="button"
+                    onClick={() => setShowOnlyIncompleteTasks(true)}
+                  >
+                    未完成任务
+                  </button>
+                  <button
+                    className={`rounded-full px-3 py-1.5 transition ${showOnlyIncompleteTasks ? 'text-blue-700' : 'bg-white text-blue-700 shadow-sm shadow-blue-100'}`}
+                    type="button"
+                    onClick={() => setShowOnlyIncompleteTasks(false)}
+                  >
+                    全部任务
+                  </button>
+                </div>
+              )}
             </div>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {tasks.map((task) => {
+              {visibleTasks.map((task) => {
                 const isSelected = selectedTaskId === task.id
                 const isFutureTask = task.taskDate > todayString()
                 return (
@@ -808,51 +842,76 @@ export default function WordChallenge() {
                             setTaskDate(task.taskDate)
                             setTitle(task.title)
                             setWords(task.words)
+                          } else {
+                            navigate(`/word-challenge/tasks/${task.id}`)
                           }
-                          setSelectedTaskId(task.id)
                         }}
                       >
                         {isAdmin ? <Pencil size={13} /> : <Star size={13} />}
-                        {isAdmin ? '编辑 / 预览' : task.isCompleted ? '进入复习' : '开始任务'}
+                        {isAdmin ? '编辑任务' : task.isCompleted ? '进入复习' : '开始任务'}
                       </button>
                       {isAdmin ? (
-                        <button
-                          className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          type="button"
-                          disabled={isSubmitting}
-                          onClick={() => {
-                            void handleDeleteTask(task)
-                          }}
-                        >
-                          <Trash2 size={13} />
-                          删除任务
-                        </button>
+                        <>
+                          <button
+                            className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 transition hover:bg-emerald-50"
+                            type="button"
+                            onClick={() => navigate(`/word-challenge/tasks/${task.id}`)}
+                          >
+                            <Star size={13} />
+                            预览闯关
+                          </button>
+                          <button
+                            className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => {
+                              void handleDeleteTask(task)
+                            }}
+                          >
+                            <Trash2 size={13} />
+                            删除任务
+                          </button>
+                        </>
                       ) : null}
                     </div>
                   </div>
                 )
               })}
             </div>
+            {!isAdmin && visibleTasks.length === 0 ? (
+              <div className="mt-3 rounded-3xl bg-blue-50 px-4 py-5 text-center text-sm font-bold text-blue-700">
+                当前没有未完成任务。关闭上面的开关可以查看全部任务并进入复习。
+              </div>
+            ) : null}
           </section>
         ) : null}
 
-        {!selectedTask ? (
+        {!isTaskPage && tasks.length === 0 ? (
           <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
             <p className="text-5xl">📘</p>
             <h2 className="mt-4 text-2xl font-black text-slate-950">
-              {tasks.length > 0 ? '请选择一个单词任务' : isAdmin ? '还没有单词任务' : '今天还没有单词任务'}
+              {isAdmin ? '还没有单词任务' : '今天还没有单词任务'}
             </h2>
             <p className="mt-3 font-semibold text-slate-500">
-              {tasks.length > 0
-                ? isAdmin
-                  ? '点击任务可以编辑内容，也可以预览学生练习流程。'
-                  : '点击未完成任务开始闯关；已完成任务仍然可以进入复习。'
-                : isAdmin
-                  ? `请先发布一个包含 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词的任务。`
-                  : '等待管理员发布后，这里会自动显示今天及以前的任务。'}
+              {isAdmin
+                ? `请先发布一个包含 ${minWordChallengeWords}-${maxWordChallengeWords} 个单词的任务。`
+                : '等待管理员发布后，这里会自动显示今天及以前的任务。'}
             </p>
           </section>
-        ) : (
+        ) : null}
+
+        {isTaskPage && !selectedTask ? (
+          <section className="rounded-[38px] border border-blue-100 bg-white/90 p-8 text-center shadow-sm shadow-blue-100">
+            <p className="text-5xl">📘</p>
+            <h2 className="mt-4 text-2xl font-black text-slate-950">没有找到这个单词任务</h2>
+            <p className="mt-3 font-semibold text-slate-500">任务可能已删除，或者当前账户没有访问权限。</p>
+            <Link className="btn-primary mt-6 bg-blue-600 shadow-blue-200 hover:bg-blue-700" to="/word-challenge">
+              返回任务列表
+            </Link>
+          </section>
+        ) : null}
+
+        {isTaskPage && selectedTask ? (
           <section className="space-y-4 sm:space-y-5">
             <div className="rounded-[28px] border border-blue-100 bg-white/90 p-4 shadow-sm shadow-blue-100 sm:rounded-[38px] sm:p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -861,10 +920,16 @@ export default function WordChallenge() {
                   <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">{selectedTask.title}</h2>
                   <p className="mt-1 text-sm font-bold text-slate-500">{selectedTask.taskDate} · 完成后自动增加 2 颗英语闯关星星</p>
                 </div>
-                <button className="btn-secondary justify-center" type="button" onClick={resetChallenge}>
-                  <RotateCcw size={17} />
-                  重新开始
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <Link className="btn-secondary justify-center" to="/word-challenge">
+                    <ArrowLeft size={17} />
+                    返回任务列表
+                  </Link>
+                  <button className="btn-secondary justify-center" type="button" onClick={resetChallenge}>
+                    <RotateCcw size={17} />
+                    重新开始
+                  </button>
+                </div>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                 {stages.map((item) => {
@@ -1320,7 +1385,7 @@ export default function WordChallenge() {
               </section>
             ) : null}
           </section>
-        )}
+        ) : null}
       </div>
       {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
     </main>
