@@ -1,4 +1,5 @@
-import { Activity, ArrowDown, Sparkles, Trophy } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Activity, ArrowDown, Sparkles, Star, Trophy } from 'lucide-react'
 import AccountMenu from '@/components/AccountMenu'
 import GameCard from '@/components/GameCard'
 import { games } from '@/data/games'
@@ -75,6 +76,27 @@ export default function Home() {
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[34px] border border-amber-100 bg-amber-50/85 p-4 shadow-sm shadow-amber-100/80 sm:p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-100">
+                <Star size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">学生积分系统</h2>
+                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-amber-900">
+                  每日登记数学、英语、读书、作文和家务星星，学生和管理员都可以单独查看积分明细与累计总数。
+                </p>
+              </div>
+            </div>
+            <Link className="btn-primary shrink-0 bg-amber-600 shadow-amber-200 hover:bg-amber-700" to="/points">
+              <Star size={18} />
+              进入积分系统
+            </Link>
           </div>
         </section>
 

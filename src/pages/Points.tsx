@@ -1,10 +1,13 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Pencil, Save, Sparkles } from 'lucide-react'
+import { Activity, LogIn, Pencil, Save, Settings, Sparkles, Star, UserPlus } from 'lucide-react'
 import { createPointRecord, fetchPointRecords, fetchPointStudents, fetchPointSummary, updatePointRecord } from '@/api/points'
+import AuthModal from '@/components/AuthModal'
 import { pointCategories, pointCategoryMap } from '@/data/pointCategories'
 import { useAuth } from '@/hooks/useAuth'
 import type { PointCategoryId, PointRecord, PointSummary, StudentOption } from '@/types/points'
+
+type AuthMode = 'login' | 'register' | 'account'
 
 function todayString() {
   return new Date().toISOString().slice(0, 10)
@@ -32,6 +35,7 @@ function parseStars(value: string) {
 
 export default function Points() {
   const { user, token, isLoading } = useAuth()
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null)
   const [students, setStudents] = useState<StudentOption[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<number | ''>('')
   const [recordDate, setRecordDate] = useState(todayString())
@@ -186,42 +190,87 @@ export default function Points() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen px-4 py-6">
-        <div className="mx-auto max-w-5xl panel">正在加载账户状态...</div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.28),transparent_30%),radial-gradient(circle_at_88%_4%,rgba(16,185,129,0.16),transparent_26%),#fff7ed] px-4 py-6">
+        <div className="mx-auto max-w-5xl rounded-[30px] border border-amber-100 bg-white/85 p-5 font-bold text-amber-800 shadow-sm shadow-amber-100">
+          正在加载积分系统...
+        </div>
       </main>
     )
   }
 
   if (!user || !token) {
     return (
-      <main className="min-h-screen px-4 py-6">
-        <div className="mx-auto max-w-3xl panel text-center">
-          <p className="eyebrow">Student Points</p>
-          <h1 className="section-title">请先登录后查看积分</h1>
-          <p className="mt-4 text-slate-600">学生和管理员登录后可以进入每日积分记录页面。</p>
-          <Link className="btn-primary mt-6" to="/">
-            返回首页登录
-          </Link>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.3),transparent_30%),radial-gradient(circle_at_88%_4%,rgba(16,185,129,0.16),transparent_26%),#fff7ed] px-4 py-6 md:py-8">
+        <div className="mx-auto max-w-5xl space-y-6">
+          <nav className="flex flex-col gap-3 rounded-[30px] border border-amber-100 bg-white/80 p-4 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-amber-500 text-white">
+                <Star size={20} />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
+                <h1 className="text-xl font-black tracking-tight text-slate-950">学生积分系统</h1>
+              </div>
+            </div>
+            <Link className="btn-secondary justify-center" to="/">
+              <Activity size={17} />
+              认知训练小游戏
+            </Link>
+          </nav>
+
+          <section className="overflow-hidden rounded-[38px] border border-amber-100 bg-white/90 p-6 text-center shadow-sm shadow-amber-100/80 backdrop-blur sm:p-10">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-amber-100 text-amber-700">
+              <Star size={30} />
+            </div>
+            <p className="mt-6 text-xs font-black uppercase tracking-[0.3em] text-amber-600">Daily Stars</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">每日积分单独记录，和小游戏训练分开管理。</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-7 text-slate-600">
+              登录后可以登记每日星星，查看每天每个项目的明细、每日总数和累计总数。管理员可以选择学生并编辑积分记录。
+            </p>
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+              <button className="btn-primary bg-amber-600 shadow-amber-200 hover:bg-amber-700" type="button" onClick={() => setAuthMode('login')}>
+                <LogIn size={18} />
+                登录积分系统
+              </button>
+              <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('register')}>
+                <UserPlus size={18} />
+                注册学生账户
+              </button>
+            </div>
+          </section>
         </div>
+
+        {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 md:py-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.28),transparent_30%),radial-gradient(circle_at_88%_4%,rgba(16,185,129,0.16),transparent_26%),#fff7ed] px-4 py-6 md:py-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <nav className="flex flex-col gap-3 rounded-[30px] border border-white/80 bg-white/75 p-4 shadow-sm shadow-slate-200/70 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="eyebrow">Student Points</p>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950">每日积分记录</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-500">
-              当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}
-            </p>
+        <nav className="flex flex-col gap-3 rounded-[30px] border border-amber-100 bg-white/80 p-4 shadow-sm shadow-amber-100/80 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-500 text-white">
+              <Star size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Student Points</p>
+              <h1 className="text-2xl font-black tracking-tight text-slate-950">学生积分系统</h1>
+              <p className="mt-1 text-sm font-semibold text-slate-500">
+                当前账户：{user.username} · {isAdmin ? '管理员' : '学生'}
+              </p>
+            </div>
           </div>
-          <Link className="btn-secondary justify-center" to="/">
-            <ArrowLeft size={17} />
-            返回首页
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
+              <Settings size={17} />
+              账户设置
+            </button>
+            <Link className="btn-secondary justify-center" to="/">
+              <Activity size={17} />
+              认知训练小游戏
+            </Link>
+          </div>
         </nav>
 
         {error ? <div className="rounded-3xl bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">{error}</div> : null}
@@ -494,6 +543,8 @@ export default function Points() {
           </form>
         </div>
       ) : null}
+
+      {authMode ? <AuthModal mode={authMode} onClose={() => setAuthMode(null)} /> : null}
     </main>
   )
 }

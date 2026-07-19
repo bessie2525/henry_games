@@ -21,7 +21,7 @@ export default function AccountMenu() {
           <>
             <Link className="btn-primary" to="/points">
               <Star size={17} />
-              我的积分
+              积分系统
             </Link>
             <button className="btn-secondary justify-center" type="button" onClick={() => setAuthMode('account')}>
               <Settings size={17} />
