@@ -252,24 +252,16 @@ async function speakSentence(sentence: string, onError?: (message: string) => vo
     return
   }
 
-  const hasSpoken = await speakWithBrowserVoice(normalizedSentence)
-  if (hasSpoken) {
+  try {
+    await playWordAudio(normalizedSentence)
     return
+  } catch {
+    // Fall through to browser speech synthesis when the sentence audio cannot play.
   }
 
-  const words = normalizedSentence.match(/[A-Za-z][A-Za-z'-]*/g) ?? []
-  let playedAnyWord = false
-  for (const word of words) {
-    try {
-      await playWordAudio(word)
-      playedAnyWord = true
-    } catch {
-      // Keep going so one unavailable word does not stop the whole sentence.
-    }
-  }
-
-  if (!playedAnyWord) {
-    onError?.('例句朗读没有播放成功。请确认手机音量正常，或换用 Chrome 浏览器重试。')
+  const hasSpoken = await speakWithBrowserVoice(normalizedSentence)
+  if (!hasSpoken) {
+    onError?.('例句朗读没有播放成功。当前手机浏览器可能不支持自然整句朗读，请换用 Chrome 或开启系统文字转语音。')
   }
 }
 
