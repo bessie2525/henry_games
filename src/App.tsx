@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 
 const Home = lazy(() => import("@/pages/Home"));
+const CognitiveGames = lazy(() => import("@/pages/CognitiveGames"));
 const Points = lazy(() => import("@/pages/Points"));
 const WordChallenge = lazy(() => import("@/pages/WordChallenge"));
 const ChimpTestGame = lazy(() => import("@/games/chimpTest/ChimpTestGame"));
@@ -29,6 +30,7 @@ export default function App() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/cognitive-games" element={<CognitiveGames />} />
             <Route path="/points" element={<Points />} />
             <Route path="/word-challenge" element={<WordChallenge />} />
             <Route path="/games/chimp-test" element={<ChimpTestGame />} />
