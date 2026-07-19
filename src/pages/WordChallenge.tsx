@@ -176,26 +176,13 @@ async function playWordAudio(word: string) {
   })
 }
 
-async function speakWord(word: string, onError?: (message: string) => void) {
-  const normalizedWord = word.trim()
-  if (!normalizedWord) {
-    return
-  }
-
-  try {
-    await playWordAudio(normalizedWord)
-    return
-  } catch {
-    // Fall through to browser speech synthesis when the network audio cannot play.
-  }
-
+async function speakWithBrowserVoice(text: string, onError?: (message: string) => void) {
   if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-    onError?.('音频发音没有播放成功，当前浏览器也不支持自动朗读。请检查手机音量或换用 Chrome。')
-    return
+    return false
   }
 
   let hasStarted = false
-  const utterance = new SpeechSynthesisUtterance(normalizedWord)
+  const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'en-US'
   utterance.rate = 0.85
   utterance.pitch = 1
@@ -210,21 +197,23 @@ async function speakWord(word: string, onError?: (message: string) => void) {
   }
 
   try {
-    await new Promise<void>((resolve) => {
+    return await new Promise<boolean>((resolve) => {
       const timeoutId = window.setTimeout(() => {
         if (!hasStarted && !window.speechSynthesis.speaking) {
           onError?.('朗读没有启动。请在 Android 系统设置中启用“文字转语音输出”后，再点一次朗读。')
+          resolve(false)
+          return
         }
-        resolve()
-      }, 1800)
+        resolve(true)
+      }, Math.min(6000, Math.max(1800, text.length * 120)))
       utterance.onend = () => {
         window.clearTimeout(timeoutId)
-        resolve()
+        resolve(true)
       }
       utterance.onerror = () => {
         window.clearTimeout(timeoutId)
         onError?.('朗读没有成功播放。请确认手机未静音，并检查 Android 是否启用了系统文字转语音服务。')
-        resolve()
+        resolve(false)
       }
 
       window.speechSynthesis.cancel()
@@ -234,6 +223,53 @@ async function speakWord(word: string, onError?: (message: string) => void) {
     })
   } catch {
     onError?.('朗读没有成功播放。请确认手机浏览器允许网页播放声音。')
+    return false
+  }
+}
+
+async function speakWord(word: string, onError?: (message: string) => void) {
+  const normalizedWord = word.trim()
+  if (!normalizedWord) {
+    return
+  }
+
+  try {
+    await playWordAudio(normalizedWord)
+    return
+  } catch {
+    // Fall through to browser speech synthesis when the network audio cannot play.
+  }
+
+  const hasSpoken = await speakWithBrowserVoice(normalizedWord, onError)
+  if (!hasSpoken) {
+    onError?.('音频发音没有播放成功，当前浏览器也不支持自动朗读。请检查手机音量或换用 Chrome。')
+  }
+}
+
+async function speakSentence(sentence: string, onError?: (message: string) => void) {
+  const normalizedSentence = sentence.trim()
+  if (!normalizedSentence) {
+    return
+  }
+
+  const hasSpoken = await speakWithBrowserVoice(normalizedSentence)
+  if (hasSpoken) {
+    return
+  }
+
+  const words = normalizedSentence.match(/[A-Za-z][A-Za-z'-]*/g) ?? []
+  let playedAnyWord = false
+  for (const word of words) {
+    try {
+      await playWordAudio(word)
+      playedAnyWord = true
+    } catch {
+      // Keep going so one unavailable word does not stop the whole sentence.
+    }
+  }
+
+  if (!playedAnyWord) {
+    onError?.('例句朗读没有播放成功。请确认手机音量正常，或换用 Chrome 浏览器重试。')
   }
 }
 
@@ -1145,7 +1181,7 @@ export default function WordChallenge() {
                           setSentencePassed((current) => new Set(current).add(sentenceIndex))
                           setIsAutoReading(true)
                           try {
-                            await speakWord(sentenceWord.example, setError)
+                            await speakSentence(sentenceWord.example, setError)
                           } finally {
                             setIsAutoReading(false)
                             setSentenceAnswers((current) => ({ ...current, [sentenceIndex]: '' }))
