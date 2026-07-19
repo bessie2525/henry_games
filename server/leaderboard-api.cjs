@@ -118,8 +118,8 @@ app.post('/api/auth/register', authRateLimit, (req, res) => {
 
   try {
     const result = db
-      .prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)')
-      .run(username, passwordHash)
+      .prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)')
+      .run(username, passwordHash, 'student')
     const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(result.lastInsertRowid)
 
     res.json({

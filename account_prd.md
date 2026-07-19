@@ -41,7 +41,7 @@
 - 可以查看云端排行榜。
 - 不可以把成绩写入云端排行榜，或提交成绩前需要先登录。
 
-### 3.2 注册用户
+### 3.2 学生用户
 
 已注册并登录的普通用户。
 
@@ -54,9 +54,9 @@
 - 可以修改用户名。
 - 可以退出登录。
 
-### 3.3 管理员，后续扩展
+### 3.3 管理员
 
-第一版不实现完整后台，但数据模型可以预留 `role` 字段。
+管理员通过 `role = 'admin'` 标识。第一版先完成字段区分，不实现完整后台。
 
 后续能力：
 
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'user',
+  role TEXT NOT NULL DEFAULT 'student',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -221,9 +221,15 @@ CREATE TABLE IF NOT EXISTS users (
 - `id`：用户 ID。
 - `username`：用户名，唯一。
 - `password_hash`：加密后的密码，不保存明文密码。
-- `role`：用户角色，第一版默认 `user`。
+- `role`：用户角色，取值为 `student` 或 `admin`，默认 `student`。
 - `created_at`：注册时间。
 - `updated_at`：更新时间。
+
+初始化规则：
+
+- 已注册账号 `bessie` 设置为 `admin`。
+- 已注册账号 `henry` 设置为 `student`。
+- 之后新注册账号默认设置为 `student`。
 
 ### 6.2 challenge_leaderboard 调整
 
@@ -379,7 +385,7 @@ Authorization: Bearer <token>
 {
   "id": 1,
   "username": "Henry",
-  "role": "user"
+  "role": "student"
 }
 ```
 

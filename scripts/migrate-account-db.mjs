@@ -112,6 +112,16 @@ function migrateFixedLeaderboard() {
   `)
 }
 
+function migrateUserRoles() {
+  if (!tableExists('users')) {
+    return
+  }
+
+  db.prepare("UPDATE users SET role = 'student' WHERE role IS NULL OR role = '' OR role = 'user'").run()
+  db.prepare("UPDATE users SET role = 'admin', updated_at = CURRENT_TIMESTAMP WHERE lower(username) = 'bessie'").run()
+  db.prepare("UPDATE users SET role = 'student', updated_at = CURRENT_TIMESTAMP WHERE lower(username) = 'henry'").run()
+}
+
 db.pragma('foreign_keys = OFF')
 
 try {
@@ -119,7 +129,9 @@ try {
     db.exec(readFileSync(schemaPath, 'utf8'))
     migrateChallengeLeaderboard()
     migrateFixedLeaderboard()
+    migrateUserRoles()
     db.exec(readFileSync(schemaPath, 'utf8'))
+    migrateUserRoles()
   })()
 
   console.log(`Account database migration completed: ${dbPath}`)

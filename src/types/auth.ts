@@ -1,7 +1,7 @@
 export type AuthUser = {
   id: number
   username: string
-  role: 'user' | 'admin'
+  role: 'student' | 'admin'
 }
 
 export type AuthResponse = {

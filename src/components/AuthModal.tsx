@@ -14,6 +14,10 @@ const modeTitle = {
   account: '账户设置',
 }
 
+function formatRole(role: string) {
+  return role === 'admin' ? '管理员' : '学生'
+}
+
 export default function AuthModal({ mode, onClose }: AuthModalProps) {
   const { user, login, register, updateUsername, logout } = useAuth()
   const [username, setUsername] = useState(user?.username ?? '')
@@ -85,6 +89,12 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
         </div>
 
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+          {mode === 'account' && user ? (
+            <div className="rounded-2xl bg-cyan-50 px-4 py-3 text-sm font-bold text-cyan-800">
+              当前身份：{formatRole(user.role)}
+            </div>
+          ) : null}
+
           <label className="block">
             <span className="text-sm font-bold text-slate-600">用户名</span>
             <input
