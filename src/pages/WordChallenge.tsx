@@ -17,8 +17,8 @@ type Stage = 'learn' | 'meaning' | 'order' | 'sky' | 'sentence' | 'done'
 const stages: { id: Stage; name: string }[] = [
   { id: 'learn', name: '学新词' },
   { id: 'meaning', name: '选意思' },
-  { id: 'order', name: '字母归位' },
   { id: 'sky', name: '字母填空' },
+  { id: 'order', name: '字母归位' },
   { id: 'sentence', name: '例句填空' },
 ]
 
@@ -79,11 +79,22 @@ function meaningOptions(words: WordChallengeWord[], currentIndex: number) {
 
 function missingPositions(word: string) {
   const letters = cleanLetters(word)
-  if (letters.length <= 2) {
+  if (letters.length <= 1) {
     return [0]
   }
 
-  return [1, Math.max(2, letters.length - 2)]
+  const missingCount = Math.max(1, Math.min(letters.length - 1, Math.round(letters.length / 3)))
+  const positions = new Set<number>()
+
+  for (let index = 0; index < missingCount; index += 1) {
+    positions.add(Math.min(letters.length - 1, Math.floor(((index + 1) * letters.length) / (missingCount + 1))))
+  }
+
+  for (let index = 0; positions.size < missingCount && index < letters.length; index += 1) {
+    positions.add(index)
+  }
+
+  return [...positions].sort((a, b) => a - b)
 }
 
 function speakWord(word: string) {
@@ -259,6 +270,15 @@ export default function WordChallenge() {
   const sentenceWord = activeWords[sentenceIndex]
   const sentenceAnswer = sentenceAnswers[sentenceIndex] ?? ''
   const isSentenceHintVisible = visibleSentenceHints.has(sentenceIndex)
+  const isTaskCompleted = Boolean(selectedTask?.isCompleted || stage === 'done')
+  const stageCompletions: Record<Stage, boolean> = {
+    learn: isTaskCompleted || (activeWords.length > 0 && activeWords.every((_, index) => heardWords.has(index) && flippedCards.has(index))),
+    meaning: isTaskCompleted || (activeWords.length > 0 && activeWords.every((_, index) => Boolean(meaningAnswers[index]))),
+    sky: isTaskCompleted || (activeWords.length > 0 && skyPassed.size === activeWords.length),
+    order: isTaskCompleted || (activeWords.length > 0 && orderPassed.size === activeWords.length),
+    sentence: isTaskCompleted || sentenceDone,
+    done: isTaskCompleted,
+  }
 
   if (isLoading) {
     return (
@@ -437,18 +457,26 @@ export default function WordChallenge() {
                 </button>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
-                {stages.map((item) => (
-                  <button
-                    key={item.id}
-                    className={`rounded-2xl px-3 py-2 text-sm font-black transition ${
-                      stage === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-blue-50 text-blue-800'
-                    }`}
-                    type="button"
-                    onClick={() => setStage(item.id)}
-                  >
-                    {item.name}
-                  </button>
-                ))}
+                {stages.map((item) => {
+                  const isActive = stage === item.id
+                  const isCompleted = stageCompletions[item.id]
+                  return (
+                    <button
+                      key={item.id}
+                      className={`rounded-2xl px-3 py-2 text-sm font-black transition ${
+                        isCompleted
+                          ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-200 shadow-sm shadow-emerald-100'
+                          : isActive
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                            : 'bg-blue-50 text-blue-800'
+                      }`}
+                      type="button"
+                      onClick={() => setStage(item.id)}
+                    >
+                      {item.name}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -585,11 +613,11 @@ export default function WordChallenge() {
                         if (meaningIndex + 1 < activeWords.length) {
                           setMeaningIndex(meaningIndex + 1)
                         } else {
-                          setStage('order')
+                          setStage('sky')
                         }
                       }}
                     >
-                      {meaningIndex + 1 < activeWords.length ? '下一题' : '进入字母归位'}
+                      {meaningIndex + 1 < activeWords.length ? '下一题' : '进入字母填空'}
                     </button>
                     <p className="mt-3 text-center text-sm font-bold text-slate-500">
                       需要先朗读，并选择答案看到中文和例句，才能继续。
@@ -668,7 +696,7 @@ export default function WordChallenge() {
                       if (orderIndex + 1 < activeWords.length) {
                         setOrderIndex(orderIndex + 1)
                       } else {
-                        setStage('sky')
+                        setStage('sentence')
                       }
                     }}
                   >
@@ -752,11 +780,11 @@ export default function WordChallenge() {
                           if (skyIndex + 1 < activeWords.length) {
                             setSkyIndex(skyIndex + 1)
                           } else {
-                            setStage('sentence')
+                            setStage('order')
                           }
                         }}
                       >
-                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入例句填空'}
+                        {skyIndex + 1 < activeWords.length ? '确认，进入下一个' : '进入字母归位'}
                       </button>
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-500">已完成 {skyPassed.size} / {activeWords.length}</p>

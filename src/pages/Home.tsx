@@ -110,7 +110,7 @@ export default function Home() {
                 <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-600">Word Challenge</p>
                 <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">英语单词闯关</h2>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-blue-900">
-                  学新词、选意思、字母归位、字母填空和例句填空，完成管理员发布的每日任务后自动获得英语闯关星星。
+                  学新词、选意思、字母填空、字母归位和例句填空，完成管理员发布的每日任务后自动获得英语闯关星星。
                 </p>
               </div>
             </div>
