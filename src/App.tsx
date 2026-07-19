@@ -33,6 +33,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/cognitive-games" element={<CognitiveGames />} />
             <Route path="/english-reading" element={<EnglishReading />} />
+            <Route path="/english-reading/tasks/:taskId" element={<EnglishReading />} />
             <Route path="/points" element={<Points />} />
             <Route path="/word-challenge" element={<WordChallenge />} />
             <Route path="/word-challenge/tasks/:taskId" element={<WordChallenge />} />

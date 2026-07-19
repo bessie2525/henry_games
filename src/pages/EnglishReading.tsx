@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Pencil, Plus, RotateCcw, Search, Settings, Star, Trash2, Type, Volume2, XCircle } from 'lucide-react'
 import {
   completeEnglishReadingTask,
@@ -101,9 +101,12 @@ function escapeRegExp(value: string) {
 
 export default function EnglishReading() {
   const { user, token, isLoading } = useAuth()
+  const { taskId } = useParams()
+  const routeTaskId = taskId ? Number(taskId) : null
+  const isTaskPage = Number.isInteger(routeTaskId)
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
   const [tasks, setTasks] = useState<EnglishReadingTask[]>([])
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(isTaskPage ? routeTaskId : null)
   const [showOnlyIncompleteTasks, setShowOnlyIncompleteTasks] = useState(true)
   const [isLargeText, setIsLargeText] = useState(false)
   const [selectedWord, setSelectedWord] = useState<ReadingVocabularyWord | null>(null)
@@ -141,13 +144,17 @@ export default function EnglishReading() {
     const response = await fetchEnglishReadingTasks(token)
     setTasks(response.tasks)
     setSelectedTaskId((current) => {
-      if (current && response.tasks.some((task) => task.id === current)) {
-        return current
+      if (isTaskPage) {
+        return response.tasks.some((task) => task.id === routeTaskId) ? routeTaskId : null
       }
 
-      return response.tasks[0]?.id ?? null
+      return current && response.tasks.some((task) => task.id === current) ? current : null
     })
-  }, [token, user])
+  }, [isTaskPage, routeTaskId, token, user])
+
+  useEffect(() => {
+    setSelectedTaskId(isTaskPage ? routeTaskId : null)
+  }, [isTaskPage, routeTaskId])
 
   useEffect(() => {
     loadTasks().catch((loadError) => setError(loadError instanceof Error ? loadError.message : '英语阅读任务加载失败'))
@@ -165,10 +172,7 @@ export default function EnglishReading() {
     }
 
     window.speechSynthesis.getVoices()
-    const handleVoicesChanged = () => {
-      window.speechSynthesis.getVoices()
-    }
-
+    const handleVoicesChanged = () => window.speechSynthesis.getVoices()
     window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged)
     return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged)
   }, [])
@@ -204,15 +208,7 @@ export default function EnglishReading() {
       throw new Error('请填写短文正文，段落之间空一行')
     }
 
-    return {
-      taskDate,
-      title,
-      level,
-      summary,
-      vocabulary,
-      paragraphs,
-      questions,
-    }
+    return { taskDate, title, level, summary, vocabulary, paragraphs, questions }
   }
 
   async function handleSaveTask(event: FormEvent) {
@@ -276,9 +272,6 @@ export default function EnglishReading() {
       setIsSubmitting(true)
       await deleteEnglishReadingTask(token, task.id)
       setMessage('英语阅读任务已删除')
-      if (selectedTaskId === task.id) {
-        setSelectedTaskId(null)
-      }
       await loadTasks()
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : '英语阅读任务删除失败')
@@ -325,6 +318,41 @@ export default function EnglishReading() {
       )
     })
   }
+
+  const notebookSection = (
+    <section className="rounded-[34px] border border-amber-100 bg-white/90 p-5 shadow-sm shadow-amber-100">
+      <div className="flex items-center gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500 text-white">
+          <Star size={20} />
+        </div>
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Vocabulary</p>
+          <h3 className="text-xl font-black text-slate-950">生词本</h3>
+        </div>
+      </div>
+      {notebookWords.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {notebookWords.map((word) => (
+            <button
+              key={`${word.word}-${word.meaning}`}
+              className="rounded-full bg-amber-50 px-3 py-2 text-sm font-black text-amber-800 ring-1 ring-amber-100"
+              type="button"
+              onClick={() => {
+                setSelectedWord(word)
+                speakText(word.word, setError)
+              }}
+            >
+              {word.word}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 rounded-3xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
+          阅读时点击正文里点亮的单词，它们会自动收进这里，方便随时点读复习。
+        </p>
+      )}
+    </section>
+  )
 
   if (isLoading) {
     return (
@@ -373,7 +401,7 @@ export default function EnglishReading() {
             {error ? <div className="rounded-3xl bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">{error}</div> : null}
             {message ? <div className="rounded-3xl bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">{message}</div> : null}
 
-            {isAdmin ? (
+            {isAdmin && !isTaskPage ? (
               <section className="panel space-y-5">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
@@ -442,229 +470,199 @@ export default function EnglishReading() {
               </section>
             ) : null}
 
-            <section className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-              <aside className="space-y-4">
+            {!isTaskPage ? (
+              <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
                 <div className="rounded-[34px] border border-orange-100 bg-white/90 p-5 shadow-sm shadow-orange-100">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">Tasks</p>
                       <h2 className="text-xl font-black text-slate-950">每日阅读任务</h2>
                     </div>
                     {!isAdmin ? (
-                      <button className="rounded-full bg-orange-50 px-3 py-2 text-xs font-black text-orange-700" type="button" onClick={() => setShowOnlyIncompleteTasks((current) => !current)}>
-                        {showOnlyIncompleteTasks ? '未完成' : '全部'}
+                      <button className="rounded-full bg-orange-50 px-4 py-2 text-sm font-black text-orange-700" type="button" onClick={() => setShowOnlyIncompleteTasks((current) => !current)}>
+                        {showOnlyIncompleteTasks ? '只显示未完成' : '显示全部任务'}
                       </button>
                     ) : null}
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
                     {visibleTasks.map((task) => (
-                      <button
-                        key={task.id}
-                        className={`w-full rounded-3xl border p-4 text-left transition ${
-                          selectedTaskId === task.id ? 'border-orange-300 bg-orange-50 shadow-sm shadow-orange-100' : 'border-slate-100 bg-white hover:border-orange-200'
-                        }`}
-                        type="button"
-                        onClick={() => setSelectedTaskId(task.id)}
-                      >
+                      <article key={task.id} className="rounded-[30px] border border-orange-100 bg-white p-5 shadow-sm shadow-orange-100">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-xs font-black text-orange-600">{task.taskDate}</p>
-                            <h3 className="mt-1 font-black text-slate-950">{task.title}</h3>
-                            <p className="mt-1 text-xs font-bold text-slate-500">{task.level} · 约 {task.wordCount} 词</p>
+                            <h3 className="mt-1 text-xl font-black text-slate-950">{task.title}</h3>
+                            <p className="mt-2 text-sm font-bold text-slate-500">{task.level} · 约 {task.wordCount} 词</p>
                           </div>
-                          {task.isCompleted ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-black text-emerald-700">已完成</span> : null}
+                          {task.isCompleted ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">已完成</span> : null}
                         </div>
-                        {isAdmin ? (
-                          <p className="mt-2 text-xs font-bold text-slate-500">完成 {task.completionCount} / {task.totalStudentCount}</p>
+                        <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{task.summary}</p>
+                        {isAdmin ? <p className="mt-3 text-xs font-bold text-slate-500">完成 {task.completionCount} / {task.totalStudentCount}</p> : null}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Link className="btn-primary bg-orange-600 shadow-orange-200 hover:bg-orange-700" to={`/english-reading/tasks/${task.id}`}>
+                            {task.isCompleted ? '复习阅读' : '开始阅读'}
+                          </Link>
+                          {isAdmin ? (
+                            <>
+                              <button className="btn-secondary justify-center" type="button" onClick={() => startEdit(task)}>
+                                <Pencil size={16} />
+                                编辑
+                              </button>
+                              <button className="btn-secondary justify-center text-rose-700" type="button" onClick={() => handleDeleteTask(task)}>
+                                <Trash2 size={16} />
+                                删除
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                        {isAdmin && task.completions.length > 0 ? (
+                          <div className="mt-3 space-y-2">
+                            {task.completions.map((completion) => (
+                              <p key={`${task.id}-${completion.studentUserId}-${completion.completedAt}`} className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+                                {completion.studentUsername} · {completion.completedAt}
+                              </p>
+                            ))}
+                          </div>
                         ) : null}
-                      </button>
+                      </article>
                     ))}
                     {visibleTasks.length === 0 ? <p className="rounded-3xl bg-orange-50 px-4 py-5 text-sm font-bold text-orange-800">暂无阅读任务。</p> : null}
                   </div>
                 </div>
-
-                {isAdmin && selectedTask ? (
-                  <div className="rounded-[34px] border border-slate-100 bg-white/90 p-5 shadow-sm">
-                    <div className="flex gap-2">
-                      <button className="btn-secondary flex-1 justify-center" type="button" onClick={() => startEdit(selectedTask)}>
-                        <Pencil size={16} />
-                        编辑
-                      </button>
-                      <button className="btn-secondary flex-1 justify-center text-rose-700" type="button" onClick={() => handleDeleteTask(selectedTask)}>
-                        <Trash2 size={16} />
-                        删除
-                      </button>
+                {notebookSection}
+              </section>
+            ) : selectedTask ? (
+              <section className="space-y-6">
+                <div className="rounded-[42px] border border-orange-100 bg-white/85 p-5 shadow-sm shadow-orange-100 sm:p-7">
+                  <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+                    <div>
+                      <Link className="btn-secondary mb-4 justify-center" to="/english-reading">
+                        <ArrowLeft size={17} />
+                        返回阅读任务
+                      </Link>
+                      <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">{selectedTask.taskDate}</p>
+                      <h2 className="mt-3 text-4xl font-black leading-tight text-slate-950 sm:text-5xl">📖 {selectedTask.title}</h2>
+                      <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-600">{selectedTask.summary}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="status-pill bg-orange-100 text-orange-800">{selectedTask.level}</span>
+                        <span className="status-pill bg-teal-100 text-teal-800">约 {selectedTask.wordCount} 词</span>
+                        <span className="status-pill bg-amber-100 text-amber-800">完成得 1 颗星</span>
+                      </div>
                     </div>
-                    <div className="mt-4 space-y-2">
-                      {selectedTask.completions.map((completion) => (
-                        <p key={`${completion.studentUserId}-${completion.completedAt}`} className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
-                          {completion.studentUsername} · {completion.completedAt}
+                    <div className="grid gap-3 rounded-[30px] bg-orange-50/80 p-4">
+                      <button className="btn-primary justify-center bg-orange-600 shadow-orange-200 hover:bg-orange-700" type="button" onClick={() => speakText(articleText, setError)}>
+                        <Volume2 size={18} />
+                        全文朗读
+                      </button>
+                      <button className="btn-secondary justify-center" type="button" onClick={() => setIsLargeText((current) => !current)}>
+                        <Type size={18} />
+                        {isLargeText ? '恢复字号' : '大字号阅读'}
+                      </button>
+                      {canClaimReward ? (
+                        <button className="btn-primary justify-center bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={isSubmitting} onClick={handleCompleteTask}>
+                          <Star size={18} />
+                          领取 1 颗星
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
+                  <article className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">Read The Story</p>
+                        <h3 className="mt-2 text-2xl font-black text-slate-950">读故事</h3>
+                      </div>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-orange-700 shadow-sm">
+                        <Search size={16} />
+                        点亮生词可查看解释
+                      </span>
+                    </div>
+
+                    <div className={`mt-6 space-y-5 font-serif text-slate-800 ${isLargeText ? 'text-2xl leading-10 sm:text-3xl sm:leading-[3.2rem]' : 'text-xl leading-9 sm:text-2xl sm:leading-10'}`}>
+                      {selectedTask.paragraphs.map((paragraph, paragraphIndex) => (
+                        <p key={paragraphIndex} className="rounded-[28px] bg-white/70 p-4 shadow-sm shadow-orange-100">
+                          <span className="mr-3 align-top text-sm font-black text-orange-400">{paragraphIndex + 1}</span>
+                          {renderParagraph(paragraph)}
                         </p>
                       ))}
                     </div>
-                  </div>
-                ) : null}
-              </aside>
+                  </article>
 
-              {selectedTask ? (
-                <section className="space-y-6">
-                  <div className="rounded-[42px] border border-orange-100 bg-white/85 p-5 shadow-sm shadow-orange-100 sm:p-7">
-                    <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">{selectedTask.taskDate}</p>
-                        <h2 className="mt-3 text-4xl font-black leading-tight text-slate-950 sm:text-5xl">📖 {selectedTask.title}</h2>
-                        <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-600">{selectedTask.summary}</p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <span className="status-pill bg-orange-100 text-orange-800">{selectedTask.level}</span>
-                          <span className="status-pill bg-teal-100 text-teal-800">约 {selectedTask.wordCount} 词</span>
-                          <span className="status-pill bg-amber-100 text-amber-800">完成得 1 颗星</span>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 rounded-[30px] bg-orange-50/80 p-4">
-                        <button className="btn-primary justify-center bg-orange-600 shadow-orange-200 hover:bg-orange-700" type="button" onClick={() => speakText(articleText, setError)}>
-                          <Volume2 size={18} />
-                          全文朗读
-                        </button>
-                        <button className="btn-secondary justify-center" type="button" onClick={() => setIsLargeText((current) => !current)}>
-                          <Type size={18} />
-                          {isLargeText ? '恢复字号' : '大字号阅读'}
-                        </button>
-                        {canClaimReward ? (
-                          <button className="btn-primary justify-center bg-emerald-600 shadow-emerald-200 hover:bg-emerald-700" type="button" disabled={isSubmitting} onClick={handleCompleteTask}>
-                            <Star size={18} />
-                            领取 1 颗星
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
-                    <article className="rounded-[38px] border border-orange-100 bg-[#fffaf0] p-5 shadow-sm shadow-orange-100 sm:p-7 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
+                  <aside className="space-y-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+                    <section className="rounded-[34px] border border-teal-100 bg-white/90 p-5 shadow-sm shadow-teal-100">
+                      <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-xs font-black uppercase tracking-[0.3em] text-orange-600">Read The Story</p>
-                          <h3 className="mt-2 text-2xl font-black text-slate-950">读故事</h3>
+                          <p className="text-xs font-black uppercase tracking-[0.3em] text-teal-600">Challenge</p>
+                          <h3 className="mt-1 text-2xl font-black text-slate-950">阅读理解</h3>
                         </div>
-                        <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-orange-700 shadow-sm">
-                          <Search size={16} />
-                          点亮生词可查看解释
-                        </span>
+                        <button className="btn-secondary px-4 py-2" type="button" onClick={() => setAnswers({})}>
+                          <RotateCcw size={16} />
+                          重做
+                        </button>
+                      </div>
+                      <div className="mt-4 rounded-3xl bg-teal-50 px-4 py-3 text-sm font-black text-teal-800">
+                        已答 {answeredCount} / {selectedTask.questions.length}，答对 {correctCount} 题。
                       </div>
 
-                      <div className={`mt-6 space-y-5 font-serif text-slate-800 ${isLargeText ? 'text-2xl leading-10 sm:text-3xl sm:leading-[3.2rem]' : 'text-xl leading-9 sm:text-2xl sm:leading-10'}`}>
-                        {selectedTask.paragraphs.map((paragraph, paragraphIndex) => (
-                          <p key={paragraphIndex} className="rounded-[28px] bg-white/70 p-4 shadow-sm shadow-orange-100">
-                            <span className="mr-3 align-top text-sm font-black text-orange-400">{paragraphIndex + 1}</span>
-                            {renderParagraph(paragraph)}
-                          </p>
-                        ))}
-                      </div>
-                    </article>
+                      <div className="mt-5 space-y-4">
+                        {selectedTask.questions.map((question, questionIndex) => {
+                          const selectedAnswer = answers[question.id]
+                          const isAnswered = Boolean(selectedAnswer)
+                          const isCorrect = selectedAnswer === question.answer
 
-                    <aside className="space-y-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-                      <section className="rounded-[34px] border border-teal-100 bg-white/90 p-5 shadow-sm shadow-teal-100">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-black uppercase tracking-[0.3em] text-teal-600">Challenge</p>
-                            <h3 className="mt-1 text-2xl font-black text-slate-950">阅读理解</h3>
-                          </div>
-                          <button className="btn-secondary px-4 py-2" type="button" onClick={() => setAnswers({})}>
-                            <RotateCcw size={16} />
-                            重做
-                          </button>
-                        </div>
-                        <div className="mt-4 rounded-3xl bg-teal-50 px-4 py-3 text-sm font-black text-teal-800">
-                          已答 {answeredCount} / {selectedTask.questions.length}，答对 {correctCount} 题。
-                        </div>
-
-                        <div className="mt-5 space-y-4">
-                          {selectedTask.questions.map((question, questionIndex) => {
-                            const selectedAnswer = answers[question.id]
-                            const isAnswered = Boolean(selectedAnswer)
-                            const isCorrect = selectedAnswer === question.answer
-
-                            return (
-                              <div key={question.id} className="rounded-[28px] border border-slate-100 bg-slate-50/80 p-4">
-                                <p className="text-sm font-black text-teal-700">Question {questionIndex + 1}</p>
-                                <h4 className="mt-2 text-base font-black leading-6 text-slate-950">{question.prompt}</h4>
-                                <div className="mt-3 grid gap-2">
-                                  {question.options.map((option) => (
-                                    <button
-                                      key={option}
-                                      className={`rounded-2xl px-4 py-3 text-left text-sm font-black transition ${
-                                        isAnswered && option === question.answer
-                                          ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-200'
-                                          : selectedAnswer === option
-                                            ? 'bg-rose-100 text-rose-800 ring-2 ring-rose-200'
-                                            : 'bg-white text-slate-700 shadow-sm hover:bg-teal-50'
-                                      }`}
-                                      type="button"
-                                      onClick={() => setAnswers((current) => ({ ...current, [question.id]: option }))}
-                                    >
-                                      {option}
-                                    </button>
-                                  ))}
-                                </div>
-                                {isAnswered ? (
-                                  <div className={`mt-3 rounded-2xl px-4 py-3 text-sm font-bold ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
-                                    <p className="flex items-center gap-2 font-black">
-                                      {isCorrect ? <CheckCircle2 size={17} /> : <XCircle size={17} />}
-                                      {isCorrect ? '回答正确' : '答错了，再回原文看一看'}
-                                    </p>
-                                    <p className="mt-2 leading-6">{question.explanation}</p>
-                                    {!isCorrect ? <p className="mt-2 rounded-xl bg-white/80 px-3 py-2 text-xs font-black">{question.paragraphHint}</p> : null}
-                                  </div>
-                                ) : null}
+                          return (
+                            <div key={question.id} className="rounded-[28px] border border-slate-100 bg-slate-50/80 p-4">
+                              <p className="text-sm font-black text-teal-700">Question {questionIndex + 1}</p>
+                              <h4 className="mt-2 text-base font-black leading-6 text-slate-950">{question.prompt}</h4>
+                              <div className="mt-3 grid gap-2">
+                                {question.options.map((option) => (
+                                  <button
+                                    key={option}
+                                    className={`rounded-2xl px-4 py-3 text-left text-sm font-black transition ${
+                                      isAnswered && option === question.answer
+                                        ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-200'
+                                        : selectedAnswer === option
+                                          ? 'bg-rose-100 text-rose-800 ring-2 ring-rose-200'
+                                          : 'bg-white text-slate-700 shadow-sm hover:bg-teal-50'
+                                    }`}
+                                    type="button"
+                                    onClick={() => setAnswers((current) => ({ ...current, [question.id]: option }))}
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
                               </div>
-                            )
-                          })}
-                        </div>
-                      </section>
-
-                      <section className="rounded-[34px] border border-amber-100 bg-white/90 p-5 shadow-sm shadow-amber-100">
-                        <div className="flex items-center gap-3">
-                          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500 text-white">
-                            <Star size={20} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Vocabulary</p>
-                            <h3 className="text-xl font-black text-slate-950">生词本</h3>
-                          </div>
-                        </div>
-                        {notebookWords.length > 0 ? (
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {notebookWords.map((word) => (
-                              <button
-                                key={`${word.word}-${word.meaning}`}
-                                className="rounded-full bg-amber-50 px-3 py-2 text-sm font-black text-amber-800 ring-1 ring-amber-100"
-                                type="button"
-                                onClick={() => {
-                                  setSelectedWord(word)
-                                  speakText(word.word, setError)
-                                }}
-                              >
-                                {word.word}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-4 rounded-3xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
-                            阅读时点击正文里点亮的单词，它们会自动收进这里，方便随时点读复习。
-                          </p>
-                        )}
-                      </section>
-                    </aside>
-                  </section>
+                              {isAnswered ? (
+                                <div className={`mt-3 rounded-2xl px-4 py-3 text-sm font-bold ${isCorrect ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
+                                  <p className="flex items-center gap-2 font-black">
+                                    {isCorrect ? <CheckCircle2 size={17} /> : <XCircle size={17} />}
+                                    {isCorrect ? '回答正确' : '答错了，再回原文看一看'}
+                                  </p>
+                                  <p className="mt-2 leading-6">{question.explanation}</p>
+                                  {!isCorrect ? <p className="mt-2 rounded-xl bg-white/80 px-3 py-2 text-xs font-black">{question.paragraphHint}</p> : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                    {notebookSection}
+                  </aside>
                 </section>
-              ) : (
-                <section className="rounded-[38px] border border-orange-100 bg-white/90 p-8 text-center shadow-sm shadow-orange-100">
-                  <p className="text-5xl">📚</p>
-                  <h2 className="mt-4 text-2xl font-black text-slate-950">暂无可阅读任务</h2>
-                  <p className="mt-3 font-semibold text-slate-500">请等待管理员发布每日英语阅读任务。</p>
-                </section>
-              )}
-            </section>
+              </section>
+            ) : (
+              <section className="rounded-[38px] border border-orange-100 bg-white/90 p-8 text-center shadow-sm shadow-orange-100">
+                <p className="text-5xl">📚</p>
+                <h2 className="mt-4 text-2xl font-black text-slate-950">没有找到这个阅读任务</h2>
+                <p className="mt-3 font-semibold text-slate-500">任务可能已删除，或者当前账户没有访问权限。</p>
+                <Link className="btn-primary mt-6 bg-orange-600 shadow-orange-200 hover:bg-orange-700" to="/english-reading">
+                  返回阅读任务
+                </Link>
+              </section>
+            )}
           </>
         )}
       </div>
